@@ -2,6 +2,23 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
+st.set_page_config(page_title="Relatrix - Corporate CRM Dashboard", layout="centered")
+# ✅ App Title
+    st.markdown("""
+        <div style='text-align: center;'>
+            <h1 style='font-size: 44px; color:#6C63FF; font-family:monospace;'>"📊 Relatrix "</h1>
+            <p style='font-size: 24px; color: deeppink; font-family: "Comic Sans MS", cursive; font-weight: bold;'>📈 Where Relationships Drive Results.</p>
+            <p style='font-size: 22px; font-family: "Comic Sans MS", cursive; font-weight: bold;'>🏢 A Corporate CRM Dashboard:</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+# ✅ Background & Styles
+    st.markdown("""
+        <style>
+        body { background: linear-gradient(to right, #ffe6f0, #e6ccff); }
+        header {visibility: hidden;}
+        footer {visibility: hidden;}
+
 # ---------------------------
 # Initialize session state
 # ---------------------------
@@ -85,3 +102,18 @@ if not st.session_state.customers.empty:
 # ---------------------------
 st.header("📋 All Customers")
 st.dataframe(st.session_state.customers.reset_index(drop=True))
+
+# ✅ Footer
+    st.markdown("""
+        <div style='
+            position: fixed;
+            bottom: 10px;
+            left: 20px;
+            background-color: #C71585;
+            padding: 12px 20px;
+            border-radius: 12px;
+            box-shadow: 0 0 15px #C71585;
+        '>
+            <p style='font-size: 20px; color: white; font-family: "Comic Sans MS", cursive; margin: 0;'>Created By Sarmistha Sen</p>
+        </div>
+    """, unsafe_allow_html=True)
