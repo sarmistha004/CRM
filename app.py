@@ -2,6 +2,23 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
+CSV_FILE = "customers.csv"
+
+# Load existing customer data or create an empty DataFrame
+def load_customers():
+    try:
+        return pd.read_csv(CSV_FILE)
+    except FileNotFoundError:
+        return pd.DataFrame(columns=[
+            'Customer ID', 'Name', 'Email', 'Phone', 'Address',
+            'City', 'State', 'Gender', 'Company', 'Joined Date'
+        ])
+
+# Save customer data to CSV
+def save_customers(df):
+    df.to_csv(CSV_FILE, index=False)
+
+
 # ✅ Set Page Config
 st.set_page_config(page_title="Relatrix - Corporate CRM Dashboard", layout="centered")
 
@@ -28,10 +45,7 @@ st.markdown("""
 # Initialize session state
 # ---------------------------
 if 'customers' not in st.session_state:
-    st.session_state.customers = pd.DataFrame(columns=[
-        'Customer ID', 'Name', 'Email', 'Phone', 'Address',
-        'City', 'State', 'Gender', 'Company', 'Joined Date'
-    ])
+    st.session_state.customers = load_customers()
 
 # ---------------------------
 # Add New Customer
@@ -59,7 +73,9 @@ with st.form("add_form"):
             'Gender': gender, 'Company': company, 'Joined Date': joined.strftime("%Y-%m-%d")
         }
         st.session_state.customers.loc[len(st.session_state.customers)] = new_row
+        save_customers(st.session_state.customers)  # ✅ Save after add
         st.success(f"Customer {name} added!")
+
 
 # ---------------------------
 # Edit Customer (Name is non-editable)
@@ -87,7 +103,9 @@ if not st.session_state.customers.empty:
             st.session_state.customers.loc[selected_index] = [
                 cid, row['Name'], email, phone, address, city, state, gender, company, joined.strftime("%Y-%m-%d")
             ]
+            save_customers(st.session_state.customers)  # ✅ Save after edit
             st.success(f"Customer '{row['Name']}' updated successfully!")
+
 
 # ---------------------------
 # Delete Customer
@@ -100,7 +118,9 @@ if not st.session_state.customers.empty:
         deleted_name = st.session_state.customers.at[del_index, 'Name']
         st.session_state.customers.drop(index=del_index, inplace=True)
         st.session_state.customers.reset_index(drop=True, inplace=True)
+        save_customers(st.session_state.customers)  # ✅ save to CSV
         st.success(f"Customer {deleted_name} deleted!")
+
 
 # ---------------------------
 # Display Customers
