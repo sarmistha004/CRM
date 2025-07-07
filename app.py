@@ -1,6 +1,10 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+import plotly.express as px
+from io import BytesIO
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 CSV_FILE = "customers.csv"
 
@@ -127,6 +131,51 @@ if not st.session_state.customers.empty:
 # ---------------------------
 st.header("📋 All Customers")
 st.dataframe(st.session_state.customers.reset_index(drop=True))
+
+# ---------------------------
+# 📊 Gender-wise Pie Chart
+# ---------------------------
+st.header("📊 Gender-wise Distribution")
+if not st.session_state.customers.empty:
+    gender_counts = st.session_state.customers['Gender'].value_counts().reset_index()
+    gender_counts.columns = ['Gender', 'Count']
+    fig = px.pie(gender_counts, values='Count', names='Gender', title='Customer Gender Ratio', color_discrete_sequence=px.colors.qualitative.Set2)
+    st.plotly_chart(fig)
+
+# ---------------------------
+# 📁 Download CSV & PDF
+# ---------------------------
+st.header("⬇️ Download Customer Data")
+
+# Download CSV
+csv = st.session_state.customers.to_csv(index=False).encode('utf-8')
+st.download_button("📥 Download CSV", data=csv, file_name="customers.csv", mime="text/csv")
+
+# Generate PDF
+def generate_pdf(dataframe):
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(50, height - 50, "📄 Relatrix - Customer Report")
+    c.setFont("Helvetica", 10)
+
+    y = height - 80
+    for index, row in dataframe.iterrows():
+        text = f"{row['Customer ID']} | {row['Name']} | {row['Email']} | {row['Gender']} | {row['Company']}"
+        c.drawString(50, y, text)
+        y -= 15
+        if y < 50:
+            c.showPage()
+            y = height - 50
+
+    c.save()
+    buffer.seek(0)
+    return buffer
+
+pdf_data = generate_pdf(st.session_state.customers)
+st.download_button("📄 Download PDF", data=pdf_data, file_name="customers_report.pdf", mime="application/pdf")
 
 # ✅ Custom Footer
 st.markdown("""
