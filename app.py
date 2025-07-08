@@ -44,6 +44,17 @@ c.execute('''CREATE TABLE IF NOT EXISTS users (
 )''')
 conn.commit()
 
+# 🔥 NEW: Create sales table
+c.execute('''CREATE TABLE IF NOT EXISTS sales (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id TEXT,
+    product TEXT,
+    amount REAL,
+    sale_date TEXT
+)''')
+conn.commit()
+
+
 def signup_user(name, email, password):
     try:
         c.execute("INSERT INTO users (name, email, password) VALUES (?, ?, ?)", (name, email, password))
@@ -75,6 +86,12 @@ def update_customer(index, row):
 
 def delete_customer(index):
     c.execute("DELETE FROM customers WHERE id=?", (index,))
+    conn.commit()
+
+def insert_sale(row):
+    c.execute('''INSERT INTO sales (customer_id, product, amount, sale_date)
+                 VALUES (?, ?, ?, ?)''',
+              (row['Customer ID'], row['Product'], row['Amount'], row['Sale Date']))
     conn.commit()
 
 # ---------------------------
@@ -184,7 +201,7 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
             st.stop()
 
 
-    menu_options = ["Show Customers"]
+    menu_options = ["Show Customers","Sales Report"]
     if st.session_state.is_admin:
         menu_options += ["Add Customer", "Edit Customer", "Delete Customer"]
 
@@ -283,6 +300,25 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
             if st.button("Delete Customer"):
                 delete_customer(data.loc[del_index]['id'])
                 st.success(f"Customer {data.loc[del_index]['name']} deleted!")
+
+    elif menu == "Sales Report":
+        st.header("💰 Sales Report")
+        sales_data = pd.read_sql_query("SELECT * FROM sales", conn)
+
+        if sales_data.empty:
+            st.warning("No sales records available.")
+        else:
+            st.dataframe(sales_data)
+
+            # Plot sales by product
+            st.subheader("📊 Sales by Product")
+            fig = px.bar(sales_data, x="product", y="amount", color="product", title="Total Sales per Product")
+            st.plotly_chart(fig)
+
+            # Total sales
+            total = sales_data["amount"].sum()
+            st.success(f"💵 Total Sales Amount: ₹{total:.2f}")
+
 
 # ---------------------------
 # Footer
