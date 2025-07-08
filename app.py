@@ -81,7 +81,6 @@ def delete_customer(index):
 # UI Setup
 # ---------------------------
 st.set_page_config(page_title="📊 Relatrix - Corporate CRM Dashboard", layout="centered")
-
 st.markdown("""
     <div style='text-align: center;'>
         <h1 style='font-size: 44px; color:#6C63FF; font-family:monospace;'>📊 Relatrix</h1>
@@ -91,20 +90,19 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------
-# Session State Setup
+# Session State
 # ---------------------------
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.email = ""
     st.session_state.name = ""
     st.session_state.is_admin = False
-if 'page' not in st.session_state:
-    st.session_state.page = 'auth'
+    st.session_state.page = "auth"
 
 # ---------------------------
-# Authentication Page
+# Login / Signup Page
 # ---------------------------
-if st.session_state.page == 'auth':
+if st.session_state.page == "auth":
     st.subheader("🔐 Login or Sign Up")
     auth_action = st.radio("Choose Action", ["Login", "Sign Up"])
 
@@ -116,7 +114,7 @@ if st.session_state.page == 'auth':
             signup_btn = st.form_submit_button("Sign Up")
             if signup_btn:
                 if signup_user(new_name, new_email, new_password):
-                    st.success("✅ Signed up! Please login.")
+                    st.success("✅ Signed up successfully! Please login.")
                 else:
                     st.error("❌ Email already registered.")
 
@@ -126,45 +124,69 @@ if st.session_state.page == 'auth':
             password = st.text_input("Password", type="password")
             login_btn = st.form_submit_button("Login")
             if login_btn:
-                user = authenticate_user(email, password)
-                if user:
-                    st.session_state.logged_in = True
-                    st.session_state.name = user[1]
-                    st.session_state.email = user[2]
-                    st.session_state.is_admin = user[2] in AUTHENTICATED_EMAILS
-                    st.success("✅ Login successful!")
-                    st.session_state.page = 'dashboard'
-                    st.experimental_rerun()
-                else:
-                    st.error("❌ Invalid credentials.")
+                with st.spinner("🔄 Logging you in, please wait..."):
+                    user = authenticate_user(email, password)
+                    if user:
+                        st.session_state.logged_in = True
+                        st.session_state.name = user[1]
+                        st.session_state.email = user[2]
+                        st.session_state.is_admin = user[2] in AUTHENTICATED_EMAILS
+                        st.success("✅ Login successful! Redirecting...")
+
+                        st.markdown("""
+                            <script>
+                                const body = window.parent.document.querySelector('body');
+                                body.style.transition = 'opacity 0.6s ease-in';
+                                body.style.opacity = '0.2';
+                                setTimeout(() => {
+                                    window.location.reload();
+                                }, 600);
+                                </script>
+                         """, unsafe_allow_html=True)
+
+                        st.session_state.page = "dashboard"
+                        st.stop()
+                    else:
+                        st.error("❌ Invalid credentials.")
 
 # ---------------------------
-# Dashboard Page (after login)
+# Dashboard Page (Post-login)
 # ---------------------------
-if st.session_state.page == 'dashboard' and st.session_state.logged_in:
+if st.session_state.page == "dashboard" and st.session_state.logged_in:
+    col1, col2 = st.columns([6, 1])
+    with col1:
+        st.markdown(f"👤 Logged in as: **{st.session_state.name}**")
+    with col2:
+        if st.button("🚪 Logout"):
+            st.success("👋 Thank you for using Relatrix. Logging out...")
+
+            # Inject animation using JavaScript
+            st.markdown("""
+                <script>
+                const body = window.parent.document.querySelector('body');
+                body.style.transition = 'opacity 0.8s ease-out';
+                body.style.opacity = '0.2';
+                setTimeout(() => {
+                    window.location.reload();
+                }, 800);
+                </script>
+            """, unsafe_allow_html=True)
+
+            # Reset session state after animation
+            st.session_state.logged_in = False
+            st.session_state.page = "auth"
+            st.session_state.email = ""
+            st.session_state.name = ""
+            st.session_state.is_admin = False
+
+            st.stop()
+
 
     menu_options = ["Show Customers"]
     if st.session_state.is_admin:
         menu_options += ["Add Customer", "Edit Customer", "Delete Customer"]
 
     menu = st.selectbox("📂 Choose Action", menu_options)
-
-    col1, col2 = st.columns([6, 1])
-    with col1:
-        st.markdown(f"👤 Logged in as: **{st.session_state.name}**")
-    with col2:
-        if st.button("🚪 Logout"):
-            st.session_state.logged_in = False
-            st.session_state.email = ""
-            st.session_state.name = ""
-            st.session_state.is_admin = False
-            st.session_state.page = 'auth'
-            st.experimental_rerun()
-
-    if menu != "Show Customers" and not st.session_state.is_admin:
-        st.warning("⚠️ You are not authorized to access this section.")
-        st.stop()
-
     data = fetch_customers()
 
     if menu == "Show Customers":
@@ -229,7 +251,6 @@ if st.session_state.page == 'dashboard' and st.session_state.logged_in:
 
     elif menu == "Edit Customer":
         st.header("✏️ Edit Customer")
-        data = fetch_customers()
         if not data.empty:
             selected = st.selectbox("Select customer to edit", data.index, format_func=lambda i: data.at[i, 'name'])
             row = data.loc[selected]
@@ -255,7 +276,6 @@ if st.session_state.page == 'dashboard' and st.session_state.logged_in:
 
     elif menu == "Delete Customer":
         st.header("🗑️ Delete Customer")
-        data = fetch_customers()
         if not data.empty:
             del_index = st.selectbox("Select customer to delete", data.index, format_func=lambda i: data.at[i, 'name'])
             if st.button("Delete Customer"):
