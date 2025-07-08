@@ -203,7 +203,7 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
 
     menu_options = ["Show Customers","Sales Report"]
     if st.session_state.is_admin:
-        menu_options += ["Add Customer", "Edit Customer", "Delete Customer", "Add Sale"]
+        menu_options += ["Add Customer", "Edit Customer", "Delete Customer", "Add Sale", "Edit Sale", "Delete Sale"]
 
     menu = st.selectbox("📂 Choose Action", menu_options)
     data = fetch_customers()
@@ -328,6 +328,39 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
                         "Sale Date": sale_date.strftime("%Y-%m-%d")
                     })
                     st.success(f"✅ Sale of ₹{amount:.2f} added for {selected_customer}")
+
+    elif menu == "Edit Sale":
+        st.header("✏️ Edit Sale")
+        sales_df = pd.read_sql_query("SELECT * FROM sales", conn)
+        if sales_df.empty:
+            st.warning("No sales data available.")
+        else:
+            selected = st.selectbox("Select Sale", sales_df.index, format_func=lambda i: f"{sales_df.at[i, 'customer_id']} - {sales_df.at[i, 'product']} on {sales_df.at[i, 'sale_date']}")
+            row = sales_df.loc[selected]
+
+            with st.form("edit_sale_form"):
+                product = st.text_input("Product", value=row['product'])
+                amount = st.number_input("Amount", value=row['amount'], min_value=0.0, format="%.2f")
+                sale_date = st.date_input("Sale Date", datetime.strptime(row['sale_date'], "%Y-%m-%d"))
+                update_btn = st.form_submit_button("Update Sale")
+
+                if update_btn:
+                    c.execute('''UPDATE sales SET product=?, amount=?, sale_date=? WHERE id=?''',
+                              (product, amount, sale_date.strftime("%Y-%m-%d"), row['id']))
+                    conn.commit()
+                    st.success(f"✅ Sale updated successfully!")
+
+    elif menu == "Delete Sale":
+        st.header("🗑️ Delete Sale")
+        sales_df = pd.read_sql_query("SELECT * FROM sales", conn)
+        if sales_df.empty:
+            st.warning("No sales data available.")
+        else:
+            selected = st.selectbox("Select Sale to Delete", sales_df.index, format_func=lambda i: f"{sales_df.at[i, 'customer_id']} - {sales_df.at[i, 'product']} on {sales_df.at[i, 'sale_date']}")
+            if st.button("Delete Sale"):
+                c.execute("DELETE FROM sales WHERE id=?", (sales_df.at[selected, 'id'],))
+                conn.commit()
+                st.success("✅ Sale deleted successfully!")
 
     elif menu == "Sales Report":
         st.header("📊 Sales Report")
