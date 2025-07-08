@@ -36,7 +36,6 @@ def fetch_customers():
 # ---------------------------
 AUTHENTICATED_EMAILS = ["sarmistha@example.com", "admin@relatrix.com"]
 
-# Create users table
 c.execute('''CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT,
@@ -45,7 +44,6 @@ c.execute('''CREATE TABLE IF NOT EXISTS users (
 )''')
 conn.commit()
 
-# Sign up new user
 def signup_user(name, email, password):
     try:
         c.execute("INSERT INTO users (name, email, password) VALUES (?, ?, ?)", (name, email, password))
@@ -54,11 +52,9 @@ def signup_user(name, email, password):
     except sqlite3.IntegrityError:
         return False
 
-# Authenticate user
 def authenticate_user(email, password):
     c.execute("SELECT * FROM users WHERE email=? AND password=?", (email, password))
     return c.fetchone()
-
 
 def insert_customer(row):
     c.execute('''INSERT INTO customers
@@ -85,6 +81,7 @@ def delete_customer(index):
 # UI Setup
 # ---------------------------
 st.set_page_config(page_title="📊 Relatrix - Corporate CRM Dashboard", layout="centered")
+
 st.markdown("""
     <div style='text-align: center;'>
         <h1 style='font-size: 44px; color:#6C63FF; font-family:monospace;'>📊 Relatrix</h1>
@@ -94,17 +91,21 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------
-# Login & Signup System
+# Session State Setup
 # ---------------------------
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.email = ""
     st.session_state.name = ""
     st.session_state.is_admin = False
+if 'page' not in st.session_state:
+    st.session_state.page = 'auth'
 
-if not st.session_state.logged_in:
+# ---------------------------
+# Authentication Page
+# ---------------------------
+if st.session_state.page == 'auth':
     st.subheader("🔐 Login or Sign Up")
-
     auth_action = st.radio("Choose Action", ["Login", "Sign Up"])
 
     if auth_action == "Sign Up":
@@ -131,141 +132,135 @@ if not st.session_state.logged_in:
                     st.session_state.name = user[1]
                     st.session_state.email = user[2]
                     st.session_state.is_admin = user[2] in AUTHENTICATED_EMAILS
-                    st.success(f"Welcome, {user[1]}!")
+                    st.success("✅ Login successful!")
+                    st.session_state.page = 'dashboard'
                     st.experimental_rerun()
                 else:
                     st.error("❌ Invalid credentials.")
 
+# ---------------------------
+# Dashboard Page (after login)
+# ---------------------------
+if st.session_state.page == 'dashboard' and st.session_state.logged_in:
 
-menu_options = ["Show Customers"]
-if st.session_state.logged_in and st.session_state.is_admin:
-    menu_options += ["Add Customer", "Edit Customer", "Delete Customer"]
+    menu_options = ["Show Customers"]
+    if st.session_state.is_admin:
+        menu_options += ["Add Customer", "Edit Customer", "Delete Customer"]
 
-menu = st.selectbox("📂 Choose Action", menu_options)
+    menu = st.selectbox("📂 Choose Action", menu_options)
 
-# 🔐 Logout + User Display
-if st.session_state.logged_in:
     col1, col2 = st.columns([6, 1])
     with col1:
         st.markdown(f"👤 Logged in as: **{st.session_state.name}**")
     with col2:
         if st.button("🚪 Logout"):
-            # Inject animation using JavaScript
-            st.markdown("""
-                <script>
-                    const body = window.parent.document.querySelector('body');
-                    body.style.transition = 'opacity 0.7s ease';
-                    body.style.opacity = '0';
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 700);
-                </script>
-            """, unsafe_allow_html=True)
-
-            # Reset session values (backend logout)
             st.session_state.logged_in = False
             st.session_state.email = ""
             st.session_state.name = ""
             st.session_state.is_admin = False
+            st.session_state.page = 'auth'
+            st.experimental_rerun()
 
-# Block access if the user is not authorized
-if menu != "Show Customers" and not (st.session_state.logged_in and st.session_state.is_admin):
-    st.warning("⚠️ You are not authorized to access this section.")
-    st.stop()
-data = fetch_customers()
+    if menu != "Show Customers" and not st.session_state.is_admin:
+        st.warning("⚠️ You are not authorized to access this section.")
+        st.stop()
 
-if menu == "Show Customers":
-    st.header("📋 All Customers")
-    st.dataframe(data)
+    data = fetch_customers()
 
-    if not data.empty:
-        st.subheader("📊 Gender-wise Distribution")
-        gender_counts = data['gender'].value_counts().reset_index()
-        gender_counts.columns = ['Gender', 'Count']
-        fig = px.pie(gender_counts, values='Count', names='Gender', title='Customer Gender Ratio',
-                     color_discrete_sequence=px.colors.qualitative.Set2)
-        st.plotly_chart(fig)
+    if menu == "Show Customers":
+        st.header("📋 All Customers")
+        st.dataframe(data)
 
-        st.subheader("⬇️ Download Customer Data")
-        csv = data.to_csv(index=False).encode('utf-8')
-        st.download_button("📥 Download CSV", data=csv, file_name="customers.csv", mime="text/csv")
+        if not data.empty:
+            st.subheader("📊 Gender-wise Distribution")
+            gender_counts = data['gender'].value_counts().reset_index()
+            gender_counts.columns = ['Gender', 'Count']
+            fig = px.pie(gender_counts, values='Count', names='Gender', title='Customer Gender Ratio',
+                         color_discrete_sequence=px.colors.qualitative.Set2)
+            st.plotly_chart(fig)
 
-        def generate_pdf(dataframe):
-            buffer = BytesIO()
-            c = canvas.Canvas(buffer, pagesize=letter)
-            width, height = letter
-            c.setFont("Helvetica-Bold", 16)
-            c.drawString(50, height - 50, "📄 Relatrix - Customer Report")
-            c.setFont("Helvetica", 10)
-            y = height - 80
-            for _, row in dataframe.iterrows():
-                text = f"{row['customer_id']} | {row['name']} | {row['email']} | {row['gender']} | {row['company']}"
-                c.drawString(50, y, text)
-                y -= 15
-                if y < 50:
-                    c.showPage()
-                    y = height - 50
-            c.save()
-            buffer.seek(0)
-            return buffer
+            st.subheader("⬇️ Download Customer Data")
+            csv = data.to_csv(index=False).encode('utf-8')
+            st.download_button("📥 Download CSV", data=csv, file_name="customers.csv", mime="text/csv")
 
-        pdf_data = generate_pdf(data)
-        st.download_button("📄 Download PDF", data=pdf_data, file_name="customers_report.pdf", mime="application/pdf")
+            def generate_pdf(dataframe):
+                buffer = BytesIO()
+                c = canvas.Canvas(buffer, pagesize=letter)
+                width, height = letter
+                c.setFont("Helvetica-Bold", 16)
+                c.drawString(50, height - 50, "📄 Relatrix - Customer Report")
+                c.setFont("Helvetica", 10)
+                y = height - 80
+                for _, row in dataframe.iterrows():
+                    text = f"{row['customer_id']} | {row['name']} | {row['email']} | {row['gender']} | {row['company']}"
+                    c.drawString(50, y, text)
+                    y -= 15
+                    if y < 50:
+                        c.showPage()
+                        y = height - 50
+                c.save()
+                buffer.seek(0)
+                return buffer
 
-elif menu == "Add Customer":
-    st.header("➕ Add New Customer")
-    with st.form("add_form"):
-        cid = st.text_input("Customer ID")
-        name = st.text_input("Name")
-        email = st.text_input("Email")
-        phone = st.text_input("Phone")
-        address = st.text_input("Address")
-        city = st.text_input("City")
-        state = st.text_input("State")
-        gender = st.selectbox("Gender", ["Male", "Female", "Other"])
-        company = st.text_input("Company")
-        joined = st.date_input("Joined Date", datetime.today())
-        submitted = st.form_submit_button("Add Customer")
-        if submitted:
-            insert_customer({
-                'Customer ID': cid, 'Name': name, 'Email': email, 'Phone': phone,
-                'Address': address, 'City': city, 'State': state,
-                'Gender': gender, 'Company': company, 'Joined Date': joined.strftime("%Y-%m-%d")
-            })
-            st.success(f"Customer {name} added!")
+            pdf_data = generate_pdf(data)
+            st.download_button("📄 Download PDF", data=pdf_data, file_name="customers_report.pdf", mime="application/pdf")
 
-elif menu == "Edit Customer":
-    st.header("✏️ Edit Customer")
-    if not data.empty:
-        selected = st.selectbox("Select customer to edit", data.index, format_func=lambda i: data.at[i, 'name'])
-        row = data.loc[selected]
-        with st.form("edit_form"):
-            cid = st.text_input("Customer ID", value=row['customer_id'])
-            st.text_input("Name (not editable)", value=row['name'], disabled=True)
-            email = st.text_input("Email", value=row['email'])
-            phone = st.text_input("Phone", value=row['phone'])
-            address = st.text_input("Address", value=row['address'])
-            city = st.text_input("City", value=row['city'])
-            state = st.text_input("State", value=row['state'])
-            gender = st.selectbox("Gender", ["Male", "Female", "Other"], index=["Male", "Female", "Other"].index(row['gender']))
-            company = st.text_input("Company", value=row['company'])
-            joined = st.date_input("Joined Date", datetime.strptime(row['joined_date'], "%Y-%m-%d"))
-            updated = st.form_submit_button("Update Customer")
-            if updated:
-                update_customer(row['id'], {
-                    'Customer ID': cid, 'Email': email, 'Phone': phone,
+    elif menu == "Add Customer":
+        st.header("➕ Add New Customer")
+        with st.form("add_form"):
+            cid = st.text_input("Customer ID")
+            name = st.text_input("Name")
+            email = st.text_input("Email")
+            phone = st.text_input("Phone")
+            address = st.text_input("Address")
+            city = st.text_input("City")
+            state = st.text_input("State")
+            gender = st.selectbox("Gender", ["Male", "Female", "Other"])
+            company = st.text_input("Company")
+            joined = st.date_input("Joined Date", datetime.today())
+            submitted = st.form_submit_button("Add Customer")
+            if submitted:
+                insert_customer({
+                    'Customer ID': cid, 'Name': name, 'Email': email, 'Phone': phone,
                     'Address': address, 'City': city, 'State': state,
                     'Gender': gender, 'Company': company, 'Joined Date': joined.strftime("%Y-%m-%d")
                 })
-                st.success(f"Customer '{row['name']}' updated successfully!")
+                st.success(f"Customer {name} added!")
 
-elif menu == "Delete Customer":
-    st.header("🗑️ Delete Customer")
-    if not data.empty:
-        del_index = st.selectbox("Select customer to delete", data.index, format_func=lambda i: data.at[i, 'name'])
-        if st.button("Delete Customer"):
-            delete_customer(data.loc[del_index]['id'])
-            st.success(f"Customer {data.loc[del_index]['name']} deleted!")
+    elif menu == "Edit Customer":
+        st.header("✏️ Edit Customer")
+        data = fetch_customers()
+        if not data.empty:
+            selected = st.selectbox("Select customer to edit", data.index, format_func=lambda i: data.at[i, 'name'])
+            row = data.loc[selected]
+            with st.form("edit_form"):
+                cid = st.text_input("Customer ID", value=row['customer_id'])
+                st.text_input("Name (not editable)", value=row['name'], disabled=True)
+                email = st.text_input("Email", value=row['email'])
+                phone = st.text_input("Phone", value=row['phone'])
+                address = st.text_input("Address", value=row['address'])
+                city = st.text_input("City", value=row['city'])
+                state = st.text_input("State", value=row['state'])
+                gender = st.selectbox("Gender", ["Male", "Female", "Other"], index=["Male", "Female", "Other"].index(row['gender']))
+                company = st.text_input("Company", value=row['company'])
+                joined = st.date_input("Joined Date", datetime.strptime(row['joined_date'], "%Y-%m-%d"))
+                updated = st.form_submit_button("Update Customer")
+                if updated:
+                    update_customer(row['id'], {
+                        'Customer ID': cid, 'Email': email, 'Phone': phone,
+                        'Address': address, 'City': city, 'State': state,
+                        'Gender': gender, 'Company': company, 'Joined Date': joined.strftime("%Y-%m-%d")
+                    })
+                    st.success(f"Customer '{row['name']}' updated successfully!")
+
+    elif menu == "Delete Customer":
+        st.header("🗑️ Delete Customer")
+        data = fetch_customers()
+        if not data.empty:
+            del_index = st.selectbox("Select customer to delete", data.index, format_func=lambda i: data.at[i, 'name'])
+            if st.button("Delete Customer"):
+                delete_customer(data.loc[del_index]['id'])
+                st.success(f"Customer {data.loc[del_index]['name']} deleted!")
 
 # ---------------------------
 # Footer
