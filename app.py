@@ -329,24 +329,53 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
                     })
                     st.success(f"✅ Sale of ₹{amount:.2f} added for {selected_customer}")
 
-
     elif menu == "Sales Report":
-        st.header("💰 Sales Report")
-        sales_data = pd.read_sql_query("SELECT * FROM sales", conn)
+        st.header("📊 Sales Report")
 
-        if sales_data.empty:
-            st.warning("No sales records available.")
+        sales_df = pd.read_sql_query("SELECT * FROM sales", conn)
+
+        if sales_df.empty:
+            st.warning("No sales data available.")
         else:
-            st.dataframe(sales_data)
+            st.dataframe(sales_df)
 
-            # Plot sales by product
-            st.subheader("📊 Sales by Product")
-            fig = px.bar(sales_data, x="product", y="amount", color="product", title="Total Sales per Product")
-            st.plotly_chart(fig)
+            # 🧁 Grouped Sales by Product
+            product_chart = px.bar(sales_df.groupby("product")["amount"].sum().reset_index(),
+                                   x="product", y="amount", title="💰 Sales by Product",
+                                   color="product", text_auto=True)
+            st.plotly_chart(product_chart)
 
-            # Total sales
-            total = sales_data["amount"].sum()
-            st.success(f"💵 Total Sales Amount: ₹{total:.2f}")
+            # 📅 Sales by Date
+            date_chart = px.line(sales_df.groupby("sale_date")["amount"].sum().reset_index(),
+                                 x="sale_date", y="amount", title="📆 Daily Sales Trend")
+            st.plotly_chart(date_chart)
+
+            # 🔻 Download CSV
+            csv = sales_df.to_csv(index=False).encode("utf-8")
+            st.download_button("📥 Download CSV", data=csv, file_name="sales_report.csv", mime="text/csv")
+
+            # 📄 PDF Export
+            def generate_sales_pdf(dataframe):
+                buffer = BytesIO()
+                c = canvas.Canvas(buffer, pagesize=letter)
+                width, height = letter
+                c.setFont("Helvetica-Bold", 16)
+                c.drawString(50, height - 50, "📄 Relatrix - Sales Report")
+                c.setFont("Helvetica", 10)
+                y = height - 80
+                for _, row in dataframe.iterrows():
+                    text = f"{row['customer_id']} | {row['product']} | ₹{row['amount']} | {row['sale_date']}"
+                    c.drawString(50, y, text)
+                    y -= 15
+                    if y < 50:
+                        c.showPage()
+                        y = height - 50
+                c.save()
+                buffer.seek(0)
+                return buffer
+
+            pdf = generate_sales_pdf(sales_df)
+            st.download_button("📄 Download PDF", data=pdf, file_name="sales_report.pdf", mime="application/pdf")
 
 
 # ---------------------------
