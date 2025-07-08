@@ -203,7 +203,7 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
 
     menu_options = ["Show Customers","Sales Report"]
     if st.session_state.is_admin:
-        menu_options += ["Add Customer", "Edit Customer", "Delete Customer"]
+        menu_options += ["Add Customer", "Edit Customer", "Delete Customer", "Add Sale"]
 
     menu = st.selectbox("📂 Choose Action", menu_options)
     data = fetch_customers()
@@ -300,6 +300,35 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
             if st.button("Delete Customer"):
                 delete_customer(data.loc[del_index]['id'])
                 st.success(f"Customer {data.loc[del_index]['name']} deleted!")
+
+    elif menu == "Add Sale":
+        st.header("🧾 Add New Sale")
+
+        customers = pd.read_sql_query("SELECT customer_id, name FROM customers", conn)
+
+        if customers.empty:
+            st.warning("Please add customers first.")
+        else:
+            with st.form("sale_form"):
+                selected_customer = st.selectbox(
+                    "Select Customer",
+                    customers["customer_id"],
+                    format_func=lambda cid: f"{cid} - {customers.loc[customers['customer_id'] == cid, 'name'].values[0]}"
+                )
+                product = st.text_input("Product")
+                amount = st.number_input("Amount (₹)", min_value=0.0, format="%.2f")
+                sale_date = st.date_input("Sale Date", datetime.today())
+
+                submit_sale = st.form_submit_button("Add Sale")
+                if submit_sale:
+                    insert_sale({
+                        "Customer ID": selected_customer,
+                        "Product": product,
+                        "Amount": amount,
+                        "Sale Date": sale_date.strftime("%Y-%m-%d")
+                    })
+                    st.success(f"✅ Sale of ₹{amount:.2f} added for {selected_customer}")
+
 
     elif menu == "Sales Report":
         st.header("💰 Sales Report")
