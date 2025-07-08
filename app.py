@@ -31,6 +31,35 @@ conn.commit()
 def fetch_customers():
     return pd.read_sql_query("SELECT * FROM customers", conn)
 
+# ---------------------------
+# User Authentication Setup
+# ---------------------------
+AUTHENTICATED_EMAILS = ["sarmistha@example.com", "admin@relatrix.com"]
+
+# Create users table
+c.execute('''CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    email TEXT UNIQUE,
+    password TEXT
+)''')
+conn.commit()
+
+# Sign up new user
+def signup_user(name, email, password):
+    try:
+        c.execute("INSERT INTO users (name, email, password) VALUES (?, ?, ?)", (name, email, password))
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False
+
+# Authenticate user
+def authenticate_user(email, password):
+    c.execute("SELECT * FROM users WHERE email=? AND password=?", (email, password))
+    return c.fetchone()
+
+
 def insert_customer(row):
     c.execute('''INSERT INTO customers
                  (customer_id, name, email, phone, address, city, state, gender, company, joined_date)
@@ -64,7 +93,85 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-menu = st.selectbox("📂 Choose Action", ["Show Customers", "Add Customer", "Edit Customer", "Delete Customer"])
+# ---------------------------
+# Login & Signup System
+# ---------------------------
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
+    st.session_state.email = ""
+    st.session_state.name = ""
+    st.session_state.is_admin = False
+
+if not st.session_state.logged_in:
+    st.subheader("🔐 Login or Sign Up")
+
+    auth_action = st.radio("Choose Action", ["Login", "Sign Up"])
+
+    if auth_action == "Sign Up":
+        with st.form("signup_form"):
+            new_name = st.text_input("Full Name")
+            new_email = st.text_input("Email")
+            new_password = st.text_input("Password", type="password")
+            signup_btn = st.form_submit_button("Sign Up")
+            if signup_btn:
+                if signup_user(new_name, new_email, new_password):
+                    st.success("✅ Signed up! Please login.")
+                else:
+                    st.error("❌ Email already registered.")
+
+    else:
+        with st.form("login_form"):
+            email = st.text_input("Email")
+            password = st.text_input("Password", type="password")
+            login_btn = st.form_submit_button("Login")
+            if login_btn:
+                user = authenticate_user(email, password)
+                if user:
+                    st.session_state.logged_in = True
+                    st.session_state.name = user[1]
+                    st.session_state.email = user[2]
+                    st.session_state.is_admin = user[2] in AUTHENTICATED_EMAILS
+                    st.success(f"Welcome, {user[1]}!")
+                    st.experimental_rerun()
+                else:
+                    st.error("❌ Invalid credentials.")
+
+
+menu_options = ["Show Customers"]
+if st.session_state.logged_in and st.session_state.is_admin:
+    menu_options += ["Add Customer", "Edit Customer", "Delete Customer"]
+
+menu = st.selectbox("📂 Choose Action", menu_options)
+
+# 🔐 Logout + User Display
+if st.session_state.logged_in:
+    col1, col2 = st.columns([6, 1])
+    with col1:
+        st.markdown(f"👤 Logged in as: **{st.session_state.name}**")
+    with col2:
+        if st.button("🚪 Logout"):
+            # Inject animation using JavaScript
+            st.markdown("""
+                <script>
+                    const body = window.parent.document.querySelector('body');
+                    body.style.transition = 'opacity 0.7s ease';
+                    body.style.opacity = '0';
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 700);
+                </script>
+            """, unsafe_allow_html=True)
+
+            # Reset session values (backend logout)
+            st.session_state.logged_in = False
+            st.session_state.email = ""
+            st.session_state.name = ""
+            st.session_state.is_admin = False
+
+# Block access if the user is not authorized
+if menu != "Show Customers" and not (st.session_state.logged_in and st.session_state.is_admin):
+    st.warning("⚠️ You are not authorized to access this section.")
+    st.stop()
 data = fetch_customers()
 
 if menu == "Show Customers":
