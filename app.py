@@ -132,6 +132,7 @@ if st.session_state.page == "auth":
                         st.session_state.email = user[2]
                         st.session_state.is_admin = user[2] in AUTHENTICATED_EMAILS
                         st.success("✅ Login successful! Redirecting...")
+                        st.rerun()
 
                         st.markdown("""
                             <script>
