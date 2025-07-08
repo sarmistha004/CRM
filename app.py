@@ -34,7 +34,7 @@ def fetch_customers():
 # ---------------------------
 # User Authentication Setup
 # ---------------------------
-AUTHENTICATED_EMAILS = ["sarmistha@example.com", "admin@relatrix.com"]
+AUTHENTICATED_EMAILS = ["sarmisthaexample@gmail.com", "admin@relatrix.com"]
 
 c.execute('''CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
