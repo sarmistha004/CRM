@@ -59,13 +59,17 @@ def signup_user(name, email, password):
     try:
         c.execute("INSERT INTO users (name, email, password) VALUES (?, ?, ?)", (name, email, password))
         conn.commit()
+        print("User added:", name, email)  # 🔍 Debug line
         return True
-    except sqlite3.IntegrityError:
+    except sqlite3.IntegrityError as e:
+        print("Signup error:", e)  # 🔍 Debug line
         return False
 
 def authenticate_user(email, password):
     c.execute("SELECT * FROM users WHERE email=? AND password=?", (email, password))
-    return c.fetchone()
+    user = c.fetchone()
+    print("Login attempted:", email, password, "->", "Success" if user else "Failed")  # 🔍 Debug
+    return user
 
 def insert_customer(row):
     c.execute('''INSERT INTO customers
