@@ -329,10 +329,15 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
     elif menu == "Delete Customer":
         st.header("🗑️ Delete Customer")
         if not data.empty:
-            del_index = st.selectbox("Select customer to delete", data.index, format_func=lambda i: data.at[i, 'name'])
+            del_index = st.selectbox(
+                "Select customer to delete", 
+                data.index, 
+                format_func=lambda i: data.at[i, 'name']
+            )
             if st.button("Delete Customer"):
-                delete_customer(data.loc[del_index]['id'])
-                st.success(f"Customer {data.loc[del_index]['name']} deleted!")
+                delete_customer(data.loc[del_index]['id'])  # Deletes from DB
+                st.success(f"✅ Customer '{data.loc[del_index]['name']}' deleted!")
+                st.rerun()  # 🔁 Reloads app to reflect changes
 
     elif menu == "Add Sale":
         st.header("🧾 Add New Sale")
@@ -389,11 +394,17 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
         if sales_df.empty:
             st.warning("No sales data available.")
         else:
-            selected = st.selectbox("Select Sale to Delete", sales_df.index, format_func=lambda i: f"{sales_df.at[i, 'customer_id']} - {sales_df.at[i, 'product']} on {sales_df.at[i, 'sale_date']}")
+            selected = st.selectbox(
+                "Select Sale to Delete", 
+                sales_df.index,
+                format_func=lambda i: f"{sales_df.at[i, 'customer_id']} - {sales_df.at[i, 'product']} on {sales_df.at[i, 'sale_date']}"
+            )
             if st.button("Delete Sale"):
                 c.execute("DELETE FROM sales WHERE id=?", (sales_df.at[selected, 'id'],))
                 conn.commit()
                 st.success("✅ Sale deleted successfully!")
+                st.rerun()  # 🔁 Refresh app to reflect deletion
+
 
     elif menu == "Sales Report":
         st.header("📊 Sales Report")
