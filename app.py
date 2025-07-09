@@ -172,6 +172,29 @@ if st.session_state.page == "auth":
 # Dashboard Page (Post-login)
 # ---------------------------
 if st.session_state.page == "dashboard" and st.session_state.logged_in:
+
+    # ✅ Add this block right here
+    st.markdown("### 💾 Database Backup & Restore")
+
+    col1, col2 = st.columns(2)
+
+    # ⬇️ Download existing database file
+    with col1:
+        try:
+            with open(DB_FILE, "rb") as f:
+                st.download_button("📥 Download Database (customers.db)", data=f, file_name="customers.db", mime="application/octet-stream")
+        except FileNotFoundError:
+            st.error("❌ No database file found to download.")
+
+    # ⬆️ Upload previously downloaded database
+    with col2:
+        uploaded_db = st.file_uploader("📤 Upload Existing Database", type=["db"])
+        if uploaded_db is not None:
+            with open(DB_FILE, "wb") as f:
+                f.write(uploaded_db.read())
+            st.success("✅ Database uploaded successfully! Please reload the app.")
+            st.experimental_rerun()
+    
     col1, col2 = st.columns([6, 1])
     with col1:
         st.markdown(f"👤 Logged in as: **{st.session_state.name}**")
