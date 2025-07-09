@@ -106,6 +106,17 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
+# 🌈 Background and cleanup style
+st.markdown("""
+    <style>
+    body {
+        background: linear-gradient(to right, #ffe6f0, #e6ccff);
+    }
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    </style>
+""", unsafe_allow_html=True)
+
 # ---------------------------
 # Session State
 # ---------------------------
