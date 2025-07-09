@@ -271,8 +271,9 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
     elif menu == "Edit Customer":
         st.header("✏️ Edit Customer")
         if not data.empty:
-            selected = st.selectbox("Select customer to edit", data.index, format_func=lambda i: data.at[i, 'name'])
-            row = data.loc[selected]
+            selected_id = st.selectbox("Select customer to edit", data['id'], 
+                                       format_func=lambda i: data[data['id'] == i]['name'].values[0])
+            row = data[data['id'] == selected_id].iloc[0]
             with st.form("edit_form"):
                 cid = st.text_input("Customer ID", value=row['customer_id'])
                 st.text_input("Name (not editable)", value=row['name'], disabled=True)
@@ -281,12 +282,13 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
                 address = st.text_input("Address", value=row['address'])
                 city = st.text_input("City", value=row['city'])
                 state = st.text_input("State", value=row['state'])
-                gender = st.selectbox("Gender", ["Male", "Female", "Other"], index=["Male", "Female", "Other"].index(row['gender']))
+                gender = st.selectbox("Gender", ["Male", "Female", "Other"], 
+                                      index=["Male", "Female", "Other"].index(row['gender']))
                 company = st.text_input("Company", value=row['company'])
                 joined = st.date_input("Joined Date", datetime.strptime(row['joined_date'], "%Y-%m-%d"))
                 updated = st.form_submit_button("Update Customer")
                 if updated:
-                    update_customer(row['id'], {
+                    update_customer(selected_id, {
                         'Customer ID': cid, 'Email': email, 'Phone': phone,
                         'Address': address, 'City': city, 'State': state,
                         'Gender': gender, 'Company': company, 'Joined Date': joined.strftime("%Y-%m-%d")
@@ -294,13 +296,15 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
                     st.success(f"Customer '{row['name']}' updated successfully!")
                     st.rerun()
 
+
     elif menu == "Delete Customer":
         st.header("🗑️ Delete Customer")
         if not data.empty:
-            del_index = st.selectbox("Select customer to delete", data.index, format_func=lambda i: data.at[i, 'name'])
+            del_id = st.selectbox("Select customer to delete", data['id'],
+                                  format_func=lambda i: data[data['id'] == i]['name'].values[0])
             if st.button("Delete Customer"):
-                delete_customer(data.loc[del_index]['id'])
-                st.success(f"Customer {data.loc[del_index]['name']} deleted!")
+                delete_customer(del_id)
+                st.success(f"Customer {data[data['id'] == del_id]['name'].values[0]} deleted!")
                 st.rerun()
 
     elif menu == "Add Sale":
@@ -337,9 +341,9 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
         if sales_df.empty:
             st.warning("No sales data available.")
         else:
-            selected = st.selectbox("Select Sale", sales_df.index, format_func=lambda i: f"{sales_df.at[i, 'customer_id']} - {sales_df.at[i, 'product']} on {sales_df.at[i, 'sale_date']}")
-            row = sales_df.loc[selected]
-
+            selected_id = st.selectbox("Select Sale", sales_df['id'],
+                                       format_func=lambda i: f"{sales_df[sales_df['id'] == i]['customer_id'].values[0]} - {sales_df[sales_df['id'] == i]['product'].values[0]} on {sales_df[sales_df['id'] == i]['sale_date'].values[0]}")
+            row = sales_df[sales_df['id'] == selected_id].iloc[0]
             with st.form("edit_sale_form"):
                 product = st.text_input("Product", value=row['product'])
                 amount = st.number_input("Amount", value=row['amount'], min_value=0.0, format="%.2f")
@@ -348,10 +352,11 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
 
                 if update_btn:
                     c.execute('''UPDATE sales SET product=?, amount=?, sale_date=? WHERE id=?''',
-                              (product, amount, sale_date.strftime("%Y-%m-%d"), row['id']))
+                              (product, amount, sale_date.strftime("%Y-%m-%d"), selected_id))
                     conn.commit()
                     st.success(f"✅ Sale updated successfully!")
                     st.rerun()
+
 
     elif menu == "Delete Sale":
         st.header("🗑️ Delete Sale")
@@ -359,12 +364,14 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
         if sales_df.empty:
             st.warning("No sales data available.")
         else:
-            selected = st.selectbox("Select Sale to Delete", sales_df.index, format_func=lambda i: f"{sales_df.at[i, 'customer_id']} - {sales_df.at[i, 'product']} on {sales_df.at[i, 'sale_date']}")
+            selected_id = st.selectbox("Select Sale to Delete", sales_df['id'],
+                                       format_func=lambda i: f"{sales_df[sales_df['id'] == i]['customer_id'].values[0]} - {sales_df[sales_df['id'] == i]['product'].values[0]} on {sales_df[sales_df['id'] == i]['sale_date'].values[0]}")
             if st.button("Delete Sale"):
-                c.execute("DELETE FROM sales WHERE id=?", (sales_df.at[selected, 'id'],))
+                c.execute("DELETE FROM sales WHERE id=?", (selected_id,))
                 conn.commit()
                 st.success("✅ Sale deleted successfully!")
                 st.rerun()
+
 
     elif menu == "Sales Report":
         st.header("📊 Sales Report")
