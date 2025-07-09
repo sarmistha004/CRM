@@ -196,8 +196,14 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
         if uploaded_db is not None:
             with open(DB_FILE, "wb") as f:
                 f.write(uploaded_db.read())
-            st.success("✅ Database uploaded successfully! Please reload the app.")
-            st.rerun()
+            st.success("✅ Database uploaded! Reloading...")
+            st.markdown("""
+                <script>
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 1200);
+                </script>
+            """, unsafe_allow_html=True)
     
     col1, col2 = st.columns([6, 1])
     with col1:
