@@ -292,6 +292,7 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
                         'Gender': gender, 'Company': company, 'Joined Date': joined.strftime("%Y-%m-%d")
                     })
                     st.success(f"Customer '{row['name']}' updated successfully!")
+                    st.rerun()
 
     elif menu == "Delete Customer":
         st.header("🗑️ Delete Customer")
@@ -300,6 +301,7 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
             if st.button("Delete Customer"):
                 delete_customer(data.loc[del_index]['id'])
                 st.success(f"Customer {data.loc[del_index]['name']} deleted!")
+                st.rerun()
 
     elif menu == "Add Sale":
         st.header("🧾 Add New Sale")
@@ -349,6 +351,7 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
                               (product, amount, sale_date.strftime("%Y-%m-%d"), row['id']))
                     conn.commit()
                     st.success(f"✅ Sale updated successfully!")
+                    st.rerun()
 
     elif menu == "Delete Sale":
         st.header("🗑️ Delete Sale")
@@ -361,6 +364,7 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
                 c.execute("DELETE FROM sales WHERE id=?", (sales_df.at[selected, 'id'],))
                 conn.commit()
                 st.success("✅ Sale deleted successfully!")
+                st.rerun()
 
     elif menu == "Sales Report":
         st.header("📊 Sales Report")
