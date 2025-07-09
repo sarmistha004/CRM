@@ -325,6 +325,7 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
                         'Gender': gender, 'Company': company, 'Joined Date': joined.strftime("%Y-%m-%d")
                     })
                     st.success(f"Customer '{row['name']}' updated successfully!")
+                    st.rerun()
 
     elif menu == "Delete Customer":
         st.header("🗑️ Delete Customer")
@@ -387,6 +388,7 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
                               (product, amount, sale_date.strftime("%Y-%m-%d"), row['id']))
                     conn.commit()
                     st.success(f"✅ Sale updated successfully!")
+                    st.rerun()
 
     elif menu == "Delete Sale":
         st.header("🗑️ Delete Sale")
