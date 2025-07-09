@@ -59,17 +59,13 @@ def signup_user(name, email, password):
     try:
         c.execute("INSERT INTO users (name, email, password) VALUES (?, ?, ?)", (name, email, password))
         conn.commit()
-        print("User added:", name, email)  # 🔍 Debug line
         return True
-    except sqlite3.IntegrityError as e:
-        print("Signup error:", e)  # 🔍 Debug line
+    except sqlite3.IntegrityError:
         return False
 
 def authenticate_user(email, password):
     c.execute("SELECT * FROM users WHERE email=? AND password=?", (email, password))
-    user = c.fetchone()
-    print("Login attempted:", email, password, "->", "Success" if user else "Failed")  # 🔍 Debug
-    return user
+    return c.fetchone()
 
 def insert_customer(row):
     c.execute('''INSERT INTO customers
@@ -176,35 +172,6 @@ if st.session_state.page == "auth":
 # Dashboard Page (Post-login)
 # ---------------------------
 if st.session_state.page == "dashboard" and st.session_state.logged_in:
-
-    # ✅ Add this block right here
-    st.markdown("### 💾 Database Backup & Restore")
-
-    col1, col2 = st.columns(2)
-
-    # ⬇️ Download existing database file
-    with col1:
-        try:
-            with open(DB_FILE, "rb") as f:
-                st.download_button("📥 Download Database (customers.db)", data=f, file_name="customers.db", mime="application/octet-stream")
-        except FileNotFoundError:
-            st.error("❌ No database file found to download.")
-
-    # ⬆️ Upload previously downloaded database
-    with col2:
-        uploaded_db = st.file_uploader("📤 Upload Existing Database", type=["db"])
-        if uploaded_db is not None:
-            with open(DB_FILE, "wb") as f:
-                f.write(uploaded_db.read())
-            st.success("✅ Database uploaded! Reloading...")
-            st.markdown("""
-                <script>
-                    setTimeout(function() {
-                        window.location.reload();
-                    }, 1200);
-                </script>
-            """, unsafe_allow_html=True)
-    
     col1, col2 = st.columns([6, 1])
     with col1:
         st.markdown(f"👤 Logged in as: **{st.session_state.name}**")
@@ -325,20 +292,14 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
                         'Gender': gender, 'Company': company, 'Joined Date': joined.strftime("%Y-%m-%d")
                     })
                     st.success(f"Customer '{row['name']}' updated successfully!")
-                    st.rerun()
 
     elif menu == "Delete Customer":
         st.header("🗑️ Delete Customer")
         if not data.empty:
-            del_index = st.selectbox(
-                "Select customer to delete", 
-                data.index, 
-                format_func=lambda i: data.at[i, 'name']
-            )
+            del_index = st.selectbox("Select customer to delete", data.index, format_func=lambda i: data.at[i, 'name'])
             if st.button("Delete Customer"):
-                delete_customer(data.loc[del_index]['id'])  # Deletes from DB
-                st.success(f"✅ Customer '{data.loc[del_index]['name']}' deleted!")
-                st.rerun()  # 🔁 Reloads app to reflect changes
+                delete_customer(data.loc[del_index]['id'])
+                st.success(f"Customer {data.loc[del_index]['name']} deleted!")
 
     elif menu == "Add Sale":
         st.header("🧾 Add New Sale")
@@ -388,7 +349,6 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
                               (product, amount, sale_date.strftime("%Y-%m-%d"), row['id']))
                     conn.commit()
                     st.success(f"✅ Sale updated successfully!")
-                    st.rerun()
 
     elif menu == "Delete Sale":
         st.header("🗑️ Delete Sale")
@@ -396,17 +356,11 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
         if sales_df.empty:
             st.warning("No sales data available.")
         else:
-            selected = st.selectbox(
-                "Select Sale to Delete", 
-                sales_df.index,
-                format_func=lambda i: f"{sales_df.at[i, 'customer_id']} - {sales_df.at[i, 'product']} on {sales_df.at[i, 'sale_date']}"
-            )
+            selected = st.selectbox("Select Sale to Delete", sales_df.index, format_func=lambda i: f"{sales_df.at[i, 'customer_id']} - {sales_df.at[i, 'product']} on {sales_df.at[i, 'sale_date']}")
             if st.button("Delete Sale"):
                 c.execute("DELETE FROM sales WHERE id=?", (sales_df.at[selected, 'id'],))
                 conn.commit()
                 st.success("✅ Sale deleted successfully!")
-                st.rerun()  # 🔁 Refresh app to reflect deletion
-
 
     elif menu == "Sales Report":
         st.header("📊 Sales Report")
