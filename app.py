@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import os
 import sqlite3
 from datetime import datetime
 import plotly.express as px
@@ -67,6 +68,11 @@ def authenticate_user(email, password):
     c.execute("SELECT * FROM users WHERE email=? AND password=?", (email, password))
     return c.fetchone()
 
+def get_password_by_email(email):
+    c.execute("SELECT password FROM users WHERE email=?", (email,))
+    result = c.fetchone()
+    return result[0] if result else None
+
 def insert_customer(row):
     c.execute('''INSERT INTO customers
                  (customer_id, name, email, phone, address, city, state, gender, company, joined_date)
@@ -127,6 +133,20 @@ if 'logged_in' not in st.session_state:
     st.session_state.is_admin = False
     st.session_state.page = "auth"
 
+REMEMBER_FILE = "remember_me.txt"
+
+# 🔁 Auto-login if remember_me.txt exists
+if not st.session_state.logged_in and os.path.exists(REMEMBER_FILE):
+    with open(REMEMBER_FILE, "r") as f:
+        saved_email = f.read().strip()
+        user = authenticate_user(saved_email, get_password_by_email(saved_email))
+        if user:
+            st.session_state.logged_in = True
+            st.session_state.name = user[1]
+            st.session_state.email = user[2]
+            st.session_state.is_admin = user[2] in AUTHENTICATED_EMAILS
+            st.session_state.page = "dashboard"
+
 # ---------------------------
 # Login / Signup Page
 # ---------------------------
@@ -150,6 +170,7 @@ if st.session_state.page == "auth":
         with st.form("login_form"):
             email = st.text_input("Email")
             password = st.text_input("Password", type="password")
+            remember_me = st.checkbox("Remember Me")  # ✅ New checkbox
             login_btn = st.form_submit_button("Login")
             if login_btn:
                 with st.spinner("🔄 Logging you in, please wait..."):
@@ -161,6 +182,13 @@ if st.session_state.page == "auth":
                         st.session_state.is_admin = user[2] in AUTHENTICATED_EMAILS
                         st.success("✅ Login successful! Redirecting...")
                         st.session_state.page = "dashboard"
+
+                        # ✅ Store email if "Remember Me" is checked
+                        if remember_me:
+                            with open("remember_me.txt", "w") as f:
+                                f.write(user[2])
+
+                        st.success("✅ Login successful! Redirecting...")
                        
                         st.markdown("""
                             <script>
@@ -173,7 +201,6 @@ if st.session_state.page == "auth":
                                 </script>
                          """, unsafe_allow_html=True)
 
-                        st.session_state.page = "dashboard"
                         st.rerun()
                         st.stop()
                     else:
@@ -201,6 +228,10 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
                 }, 800);
                 </script>
             """, unsafe_allow_html=True)
+
+            # ✅ Delete remember_me file if it exists
+            if os.path.exists("remember_me.txt"):
+                os.remove("remember_me.txt")
 
             # Reset session state after animation
             st.session_state.logged_in = False
