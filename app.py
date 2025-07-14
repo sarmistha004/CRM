@@ -78,8 +78,8 @@ def authenticate_user(email, password):
     return c.fetchone()
 
 
- def fetch_customers():
-        return pd.read_sql("SELECT * FROM customers", conn)
+def fetch_customers():
+    return pd.read_sql("SELECT * FROM customers", conn)
 
 def fetch_sales():
         return pd.read_sql("SELECT * FROM sales", conn)
