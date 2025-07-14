@@ -178,7 +178,6 @@ if st.session_state.page == "auth":
                         st.success("✅ Login successful! Redirecting...")
                         st.session_state.page = "dashboard"
                         st.rerun()
-                        st.stop()
                     else:
                         st.error("❌ Invalid credentials.")
 
