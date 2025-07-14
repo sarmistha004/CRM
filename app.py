@@ -174,7 +174,10 @@ if st.session_state.logged_in:
             - **Company:** {cust['company']}
             """)
 
-            sales_df = pd.read_sql_query("SELECT * FROM sales WHERE customer_id = ?", conn, params=(cust['customer_id'],))
+            sales_df = pd.read_sql_query(
+                f"SELECT * FROM sales WHERE customer_id = '{cust['customer_id']}'",
+                conn
+            )
             if sales_df.empty:
                 st.info("No sales found for this customer.")
             else:
