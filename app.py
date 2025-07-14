@@ -87,8 +87,8 @@ st.markdown("""
 # Session & Auth
 # ---------------------------
 if 'logged_in' not in st.session_state:
-    st.session_state.logged_in = True
-    st.session_state.name = "Sarmistha Sen"
+    st.session_state.logged_in = False
+    st.session_state.name = ""
 
 if st.session_state.logged_in:
     col1, col2 = st.columns([6, 1])
