@@ -70,13 +70,12 @@ def signup_user(name, email, password):
         c.execute("INSERT INTO users (name, email, password) VALUES (?, ?, ?)", (name, email, password))
         conn.commit()
         return True
-    except sqlite3.IntegrityError:
+    except mysql.connector.IntegrityError:
         return False
 
 def authenticate_user(email, password):
     c.execute("SELECT * FROM users WHERE email=? AND password=?", (email, password))
     return c.fetchone()
-
 
 def fetch_customers():
     return pd.read_sql("SELECT * FROM customers", conn)
