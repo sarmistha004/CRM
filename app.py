@@ -177,19 +177,6 @@ if st.session_state.page == "auth":
                         st.session_state.is_admin = user[2] in AUTHENTICATED_EMAILS
                         st.success("✅ Login successful! Redirecting...")
                         st.session_state.page = "dashboard"
-                       
-                        st.markdown("""
-                            <script>
-                                const body = window.parent.document.querySelector('body');
-                                body.style.transition = 'opacity 0.6s ease-in';
-                                body.style.opacity = '0.2';
-                                setTimeout(() => {
-                                    window.location.reload();
-                                }, 600);
-                                </script>
-                         """, unsafe_allow_html=True)
-
-                        st.session_state.page = "dashboard"
                         st.rerun()
                         st.stop()
                     else:
