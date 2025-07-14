@@ -192,18 +192,6 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
         if st.button("🚪 Logout"):
             st.success("👋 Thank you for using Relatrix. Logging out...")
 
-            # Inject animation using JavaScript
-            st.markdown("""
-                <script>
-                const body = window.parent.document.querySelector('body');
-                body.style.transition = 'opacity 0.8s ease-out';
-                body.style.opacity = '0.2';
-                setTimeout(() => {
-                    window.location.reload();
-                }, 800);
-                </script>
-            """, unsafe_allow_html=True)
-
             # Reset session state after animation
             st.session_state.logged_in = False
             st.session_state.page = "auth"
