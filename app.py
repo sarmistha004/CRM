@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
-import sqlite3
+import os
+import mysql.connector
 from datetime import datetime
 import plotly.express as px
 from io import BytesIO
@@ -10,23 +11,34 @@ from reportlab.pdfgen import canvas
 # ---------------------------
 # Database Setup
 # ---------------------------
-DB_FILE = "customers.db"
-conn = sqlite3.connect(DB_FILE, check_same_thread=False)
+def create_connection():
+    return mysql.connector.connect(
+        host='sql12.freesqldatabase.com',
+        port=3306,
+        user='sql12789825',
+        password='QFHEeX2hwG',
+        database='sql12789825'
+    )
+
+conn = create_connection()
 c = conn.cursor()
+
+# ---------------------------
+# Ensure Tables Exist
+# ---------------------------
 c.execute('''CREATE TABLE IF NOT EXISTS customers (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    customer_id TEXT,
-    name TEXT,
-    email TEXT,
-    phone TEXT,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    customer_id VARCHAR(50),
+    name VARCHAR(100),
+    email VARCHAR(100),
+    phone VARCHAR(20),
     address TEXT,
-    city TEXT,
-    state TEXT,
-    gender TEXT,
-    company TEXT,
-    joined_date TEXT
+    city VARCHAR(50),
+    state VARCHAR(50),
+    gender VARCHAR(20),
+    company VARCHAR(100),
+    joined_date DATE
 )''')
-conn.commit()
 
 def fetch_customers():
     return pd.read_sql_query("SELECT * FROM customers", conn)
@@ -37,20 +49,18 @@ def fetch_customers():
 AUTHENTICATED_EMAILS = ["sarmisthaexample@gmail.com", "admin@relatrix.com"]
 
 c.execute('''CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT,
-    email TEXT UNIQUE,
-    password TEXT
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100) UNIQUE,
+    password VARCHAR(100)
 )''')
-conn.commit()
 
-# 🔥 NEW: Create sales table
 c.execute('''CREATE TABLE IF NOT EXISTS sales (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    customer_id TEXT,
-    product TEXT,
-    amount REAL,
-    sale_date TEXT
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    customer_id VARCHAR(50),
+    product VARCHAR(100),
+    amount FLOAT,
+    sale_date DATE
 )''')
 conn.commit()
 
@@ -67,32 +77,42 @@ def authenticate_user(email, password):
     c.execute("SELECT * FROM users WHERE email=? AND password=?", (email, password))
     return c.fetchone()
 
+
+ def fetch_customers():
+        return pd.read_sql("SELECT * FROM customers", conn)
+
+def fetch_sales():
+        return pd.read_sql("SELECT * FROM sales", conn)
+
 def insert_customer(row):
-    c.execute('''INSERT INTO customers
-                 (customer_id, name, email, phone, address, city, state, gender, company, joined_date)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-              (row['Customer ID'], row['Name'], row['Email'], row['Phone'],
-               row['Address'], row['City'], row['State'], row['Gender'],
-               row['Company'], row['Joined Date']))
-    conn.commit()
+        sql = """INSERT INTO customers (customer_id, name, email, phone, address, city, state, gender, company, joined_date)
+                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+        c.execute(sql, row)
+        conn.commit()
 
-def update_customer(index, row):
-    c.execute('''UPDATE customers SET customer_id=?, email=?, phone=?, address=?, city=?,
-                 state=?, gender=?, company=?, joined_date=? WHERE id=?''',
-              (row['Customer ID'], row['Email'], row['Phone'], row['Address'],
-               row['City'], row['State'], row['Gender'], row['Company'],
-               row['Joined Date'], index))
-    conn.commit()
+def update_customer(row):
+        sql = """UPDATE customers SET customer_id=%s, name=%s, email=%s, phone=%s, address=%s, city=%s, 
+                 state=%s, gender=%s, company=%s, joined_date=%s WHERE id=%s"""
+        c.execute(sql, row)
+        conn.commit()
 
-def delete_customer(index):
-    c.execute("DELETE FROM customers WHERE id=?", (index,))
-    conn.commit()
+def delete_customer(cid):
+        c.execute("DELETE FROM customers WHERE id=%s", (cid,))
+        conn.commit()
 
 def insert_sale(row):
-    c.execute('''INSERT INTO sales (customer_id, product, amount, sale_date)
-                 VALUES (?, ?, ?, ?)''',
-              (row['Customer ID'], row['Product'], row['Amount'], row['Sale Date']))
-    conn.commit()
+        sql = "INSERT INTO sales (customer_id, product, amount, sale_date) VALUES (%s, %s, %s, %s)"
+        c.execute(sql, row)
+        conn.commit()
+
+def update_sale(row):
+        sql = "UPDATE sales SET customer_id=%s, product=%s, amount=%s, sale_date=%s WHERE id=%s"
+        c.execute(sql, row)
+        conn.commit()
+
+def delete_sale(sid):
+        c.execute("DELETE FROM sales WHERE id=%s", (sid,))
+        conn.commit()
 
 # ---------------------------
 # UI Setup
@@ -210,6 +230,7 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
 
     if menu == "Show Customers":
         st.header("📋 All Customers")
+        data = fetch_customers()
         st.dataframe(data)
 
         if not data.empty:
@@ -247,8 +268,8 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
             st.download_button("📄 Download PDF", data=pdf_data, file_name="customers_report.pdf", mime="application/pdf")
 
     elif menu == "Add Customer":
-        st.header("➕ Add New Customer")
-        with st.form("add_form"):
+        st.header("➕ Add Customer")
+        with st.form("add_customer"):
             cid = st.text_input("Customer ID")
             name = st.text_input("Name")
             email = st.text_input("Email")
@@ -258,53 +279,51 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
             state = st.text_input("State")
             gender = st.selectbox("Gender", ["Male", "Female", "Other"])
             company = st.text_input("Company")
-            joined = st.date_input("Joined Date", datetime.today())
-            submitted = st.form_submit_button("Add Customer")
-            if submitted:
-                insert_customer({
-                    'Customer ID': cid, 'Name': name, 'Email': email, 'Phone': phone,
-                    'Address': address, 'City': city, 'State': state,
-                    'Gender': gender, 'Company': company, 'Joined Date': joined.strftime("%Y-%m-%d")
-                })
-                st.success(f"Customer {name} added!")
+            joined = st.date_input("Joined Date")
+            submit = st.form_submit_button("Add")
+            if submit:
+                insert_customer((cid, name, email, phone, address, city, state, gender, company, joined))
+                st.success("✅ Customer added")
 
     elif menu == "Edit Customer":
-        st.header("✏️ Edit Customer")
-        if not data.empty:
-            selected = st.selectbox("Select customer to edit", data.index, format_func=lambda i: data.at[i, 'name'])
-            row = data.loc[selected]
-            with st.form("edit_form"):
-                cid = st.text_input("Customer ID", value=row['customer_id'])
-                st.text_input("Name (not editable)", value=row['name'], disabled=True)
-                email = st.text_input("Email", value=row['email'])
-                phone = st.text_input("Phone", value=row['phone'])
-                address = st.text_input("Address", value=row['address'])
-                city = st.text_input("City", value=row['city'])
-                state = st.text_input("State", value=row['state'])
-                gender = st.selectbox("Gender", ["Male", "Female", "Other"], index=["Male", "Female", "Other"].index(row['gender']))
-                company = st.text_input("Company", value=row['company'])
-                joined = st.date_input("Joined Date", datetime.strptime(row['joined_date'], "%Y-%m-%d"))
-                updated = st.form_submit_button("Update Customer")
-                if updated:
-                    update_customer(row['id'], {
-                        'Customer ID': cid, 'Email': email, 'Phone': phone,
-                        'Address': address, 'City': city, 'State': state,
-                        'Gender': gender, 'Company': company, 'Joined Date': joined.strftime("%Y-%m-%d")
-                    })
-                    st.success(f"Customer '{row['name']}' updated successfully!")
+        df = fetch_customers()
+        selected = st.selectbox("Choose Customer ID", df['id'])
+        row = df[df['id'] == selected].iloc[0]
+        with st.form("edit_customer"):
+            cid = st.text_input("Customer ID", value=row['customer_id'])
+            name = st.text_input("Name", value=row['name'])
+            email = st.text_input("Email", value=row['email'])
+            phone = st.text_input("Phone", value=row['phone'])
+            address = st.text_input("Address", value=row['address'])
+            city = st.text_input("City", value=row['city'])
+            state = st.text_input("State", value=row['state'])
+            gender = st.selectbox("Gender", ["Male", "Female", "Other"], index=["Male", "Female", "Other"].index(row['gender']))
+            company = st.text_input("Company", value=row['company'])
+            joined = st.date_input("Joined Date", value=row['joined_date'])
+            submit = st.form_submit_button("Update")
+            if submit:
+                update_customer((cid, name, email, phone, address, city, state, gender, company, joined, selected))
+                st.success("✅ Customer updated")
 
     elif menu == "Delete Customer":
-        st.header("🗑️ Delete Customer")
-        if not data.empty:
-            del_index = st.selectbox("Select customer to delete", data.index, format_func=lambda i: data.at[i, 'name'])
-            if st.button("Delete Customer"):
-                delete_customer(data.loc[del_index]['id'])
-                st.success(f"Customer {data.loc[del_index]['name']} deleted!")
+        df = fetch_customers()
+        selected = st.selectbox("Choose Customer to Delete", df['id'])
+        if st.button("Delete"):
+            delete_customer(selected)
+            st.success("🗑️ Deleted successfully")
 
     elif menu == "Add Sale":
-        st.header("🧾 Add New Sale")
-
-        customers = pd.read_sql_query("SELECT customer_id, name FROM customers", conn)
+        st.header("🧾 Add Sale")
+        customers = fetch_customers()
+        with st.form("add_sale"):
+            customer_id = st.selectbox("Select Customer", customers['customer_id'])
+            product = st.text_input("Product")
+            amount = st.number_input("Amount", min_value=0.0)
+            sale_date = st.date_input("Sale Date")
+            submit = st.form_submit_button("Add")
+            if submit:
+                insert_sale((customer_id, product, amount, sale_date))
+                st.success("✅ Sale recorded")
 
         if customers.empty:
             st.warning("Please add customers first.")
@@ -330,61 +349,49 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
                     st.success(f"✅ Sale of ₹{amount:.2f} added for {selected_customer}")
 
     elif menu == "Edit Sale":
-        st.header("✏️ Edit Sale")
-        sales_df = pd.read_sql_query("SELECT * FROM sales", conn)
-        if sales_df.empty:
-            st.warning("No sales data available.")
-        else:
-            selected = st.selectbox("Select Sale", sales_df.index, format_func=lambda i: f"{sales_df.at[i, 'customer_id']} - {sales_df.at[i, 'product']} on {sales_df.at[i, 'sale_date']}")
-            row = sales_df.loc[selected]
-
-            with st.form("edit_sale_form"):
-                product = st.text_input("Product", value=row['product'])
-                amount = st.number_input("Amount", value=row['amount'], min_value=0.0, format="%.2f")
-                sale_date = st.date_input("Sale Date", datetime.strptime(row['sale_date'], "%Y-%m-%d"))
-                update_btn = st.form_submit_button("Update Sale")
-
-                if update_btn:
-                    c.execute('''UPDATE sales SET product=?, amount=?, sale_date=? WHERE id=?''',
-                              (product, amount, sale_date.strftime("%Y-%m-%d"), row['id']))
-                    conn.commit()
-                    st.success(f"✅ Sale updated successfully!")
+        df = fetch_sales()
+        selected = st.selectbox("Select Sale to Edit", df['id'])
+        row = df[df['id'] == selected].iloc[0]
+        with st.form("edit_sale"):
+            customer_id = st.text_input("Customer ID", value=row['customer_id'])
+            product = st.text_input("Product", value=row['product'])
+            amount = st.number_input("Amount", value=row['amount'], min_value=0.0)
+            sale_date = st.date_input("Sale Date", value=row['sale_date'])
+            submit = st.form_submit_button("Update")
+            if submit:
+                update_sale((customer_id, product, amount, sale_date, selected))
+                st.success("✅ Sale updated")
 
     elif menu == "Delete Sale":
-        st.header("🗑️ Delete Sale")
-        sales_df = pd.read_sql_query("SELECT * FROM sales", conn)
-        if sales_df.empty:
-            st.warning("No sales data available.")
-        else:
-            selected = st.selectbox("Select Sale to Delete", sales_df.index, format_func=lambda i: f"{sales_df.at[i, 'customer_id']} - {sales_df.at[i, 'product']} on {sales_df.at[i, 'sale_date']}")
-            if st.button("Delete Sale"):
-                c.execute("DELETE FROM sales WHERE id=?", (sales_df.at[selected, 'id'],))
-                conn.commit()
-                st.success("✅ Sale deleted successfully!")
+        df = fetch_sales()
+        selected = st.selectbox("Select Sale to Delete", df['id'])
+        if st.button("Delete"):
+            delete_sale(selected)
+            st.success("🗑️ Sale deleted")
 
     elif menu == "Sales Report":
         st.header("📊 Sales Report")
+        sales = fetch_sales()
+        st.dataframe(sales)
 
-        sales_df = pd.read_sql_query("SELECT * FROM sales", conn)
-
-        if sales_df.empty:
+        if sales.empty:
             st.warning("No sales data available.")
         else:
-            st.dataframe(sales_df)
+            st.dataframe(sales)
 
             # 🧁 Grouped Sales by Product
-            product_chart = px.bar(sales_df.groupby("product")["amount"].sum().reset_index(),
+            product_chart = px.bar(sales.groupby("product")["amount"].sum().reset_index(),
                                    x="product", y="amount", title="💰 Sales by Product",
                                    color="product", text_auto=True)
             st.plotly_chart(product_chart)
 
             # 📅 Sales by Date
-            date_chart = px.line(sales_df.groupby("sale_date")["amount"].sum().reset_index(),
+            date_chart = px.line(sales.groupby("sale_date")["amount"].sum().reset_index(),
                                  x="sale_date", y="amount", title="📆 Daily Sales Trend")
             st.plotly_chart(date_chart)
 
             # 🔻 Download CSV
-            csv = sales_df.to_csv(index=False).encode("utf-8")
+            csv = sales.to_csv(index=False).encode("utf-8")
             st.download_button("📥 Download CSV", data=csv, file_name="sales_report.csv", mime="text/csv")
 
             # 📄 PDF Export
@@ -407,7 +414,7 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
                 buffer.seek(0)
                 return buffer
 
-            pdf = generate_sales_pdf(sales_df)
+            pdf = generate_sales_pdf(sales)
             st.download_button("📄 Download PDF", data=pdf, file_name="sales_report.pdf", mime="application/pdf")
 
 
@@ -420,4 +427,3 @@ st.markdown("""
         <p style='font-size: 20px; color: white; font-family: "Comic Sans MS", cursive; margin: 0;'>Created by Sarmistha Sen</p>
     </div>
 """, unsafe_allow_html=True)
-edit, delete functions are not working
