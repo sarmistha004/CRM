@@ -67,7 +67,7 @@ conn.commit()
 
 def signup_user(name, email, password):
     try:
-        c.execute("INSERT INTO users (name, email, password) VALUES (?, ?, ?)", (name, email, password))
+        c.execute("INSERT INTO users (name, email, password) VALUES (%s, %s, %s)", (name, email, password))
         conn.commit()
         return True
     except mysql.connector.IntegrityError:
