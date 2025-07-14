@@ -82,7 +82,7 @@ def signup_user(name, email, password):
         return False
 
 def authenticate_user(email, password):
-    c.execute("SELECT * FROM users WHERE email=? AND password=?", (email, password))
+    c.execute("SELECT * FROM users WHERE email=%s AND password=%s", (email, password))
     return c.fetchone()
 
 def fetch_customers():
