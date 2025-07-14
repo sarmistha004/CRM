@@ -147,7 +147,7 @@ if st.session_state.logged_in:
         conn.commit()
 
     menu = st.sidebar.selectbox("Choose Action", [
-        "Show Customers", "Customer Profiles", "Add Customer", "Edit Customer", "Delete Customer",
+        "Show Customers", "Add Customer", "Edit Customer", "Delete Customer",
         "Sales Report", "Add Sale", "Edit Sale", "Delete Sale"
     ])
 
@@ -155,40 +155,6 @@ if st.session_state.logged_in:
         st.header("📋 All Customers")
         data = fetch_customers()
         st.dataframe(data)
-
-    elif menu == "Customer Profiles":
-        st.header("🧍 Customer Profile Dashboard")
-        data = fetch_customers()
-        if data.empty:
-            st.warning("No customers available.")
-        else:
-            selected = st.selectbox("Select Customer", data['name'])
-            cust = data[data['name'] == selected].iloc[0]
-
-            st.subheader("📞 Contact Information")
-            st.markdown(f"""
-            - **Customer ID:** {cust['customer_id']}
-            - **Email:** {cust['email']}
-            - **Phone:** {cust['phone']}
-            - **Address:** {cust['address']}, {cust['city']}, {cust['state']}
-            - **Company:** {cust['company']}
-            """)
-
-            sales_df = pd.read_sql_query(
-                f"SELECT * FROM sales WHERE customer_id = '{cust['customer_id']}'",
-                conn
-            )
-            if sales_df.empty:
-                st.info("No sales found for this customer.")
-            else:
-                total = sales_df['amount'].sum()
-                last_date = sales_df['sale_date'].max()
-                st.markdown(f"💰 **Total Purchases:** ₹{total:.2f}")
-                st.markdown(f"🕒 **Last Purchase Date:** {last_date}")
-
-                chart = px.bar(sales_df, x="sale_date", y="amount", title="📈 Purchase History", labels={"amount": "Amount (₹)"})
-                st.plotly_chart(chart)
-
 
     elif menu == "Add Customer":
         st.header("➕ Add Customer")
