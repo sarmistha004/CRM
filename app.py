@@ -23,6 +23,13 @@ def create_connection():
 conn = create_connection()
 c = conn.cursor()
 
+# ✅ Safely ensure 'users' table has 'password' column
+try:
+    c.execute("ALTER TABLE users ADD COLUMN password VARCHAR(100)")
+    conn.commit()
+except mysql.connector.errors.ProgrammingError:
+    pass  # Column already exists
+
 # ---------------------------
 # Ensure Tables Exist
 # ---------------------------
@@ -48,7 +55,6 @@ def fetch_customers():
 # ---------------------------
 AUTHENTICATED_EMAILS = ["sarmisthaexample@gmail.com", "admin@relatrix.com"]
 
-c.execute("DROP TABLE IF EXISTS users")
 c.execute('''CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100),
