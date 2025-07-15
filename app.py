@@ -98,7 +98,9 @@ def fetch_sales():
     c = conn.cursor(dictionary=True)
     c.execute("SELECT * FROM sales")
     rows = c.fetchall()
-    return pd.DataFrame(rows)
+    df = pd.DataFrame(rows)
+    st.write("🔍 Fetched Sales Data Columns:", df.columns.tolist())  # ✅ Add this line
+    return df
 
 def insert_customer(row):
         sql = """INSERT INTO customers (customer_id, name, email, phone, address, city, state, gender, company, joined_date)
