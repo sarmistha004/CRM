@@ -250,12 +250,10 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
         st.dataframe(data)
         if 'customer_id' in data.columns and not data.empty:
             selected_profile = st.selectbox("🔍 View Customer Profile", data['customer_id'])
-            if st.button("View Profile"):
+            if st.button("View Profile", key="view_profile_btn"):
                 show_customer_profile(selected_profile)
         else:
             st.warning("⚠️ No customers found or 'customer_id' column missing.")
-        if st.button("View Profile"):
-            show_customer_profile(selected_profile)
 
         if not data.empty:
             st.subheader("📊 Gender-wise Distribution")
