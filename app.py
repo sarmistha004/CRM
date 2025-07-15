@@ -3,7 +3,6 @@ import pandas as pd
 import os
 import mysql.connector
 from datetime import datetime
-import time
 import plotly.express as px
 from io import BytesIO
 from reportlab.lib.pagesizes import letter
@@ -12,7 +11,8 @@ from reportlab.pdfgen import canvas
 # ---------------------------
 # Database Setup
 # ---------------------------
-def create_connection():
+@st.cache_resource
+def get_connection():
     return mysql.connector.connect(
         host='sql12.freesqldatabase.com',
         port=3306,
@@ -21,7 +21,7 @@ def create_connection():
         database='sql12789825'
     )
 
-conn = create_connection()
+conn = get_connection()
 c = conn.cursor()
 
 # ✅ Safely ensure 'users' table has 'password' column
@@ -47,9 +47,6 @@ c.execute('''CREATE TABLE IF NOT EXISTS customers (
     company VARCHAR(100),
     joined_date DATE
 )''')
-
-def fetch_customers():
-    return pd.read_sql_query("SELECT * FROM customers", conn)
 
 # ---------------------------
 # User Authentication Setup
@@ -126,6 +123,13 @@ def delete_sale(sid):
 # UI Setup
 # ---------------------------
 st.set_page_config(page_title="📊 Relatrix - Corporate CRM Dashboard", layout="centered")
+
+st.session_state.setdefault("logged_in", False)
+st.session_state.setdefault("email", "")
+st.session_state.setdefault("name", "")
+st.session_state.setdefault("is_admin", False)
+st.session_state.setdefault("page", "auth")
+
 st.markdown("""
     <div style='text-align: center;'>
         <h1 style='font-size: 44px; color:#6C63FF; font-family:monospace;'>📊 Relatrix</h1>
@@ -134,19 +138,6 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-if st.session_state.get("logged_in", False) and st.session_state.get("page") == "auth":
-    st.session_state.page = "dashboard"
-    st.rerun()
-
-# ---------------------------
-# Session State
-# ---------------------------
-if 'logged_in' not in st.session_state:
-    st.session_state.logged_in = False
-    st.session_state.email = ""
-    st.session_state.name = ""
-    st.session_state.is_admin = False
-    st.session_state.page = "auth"
 
 # ---------------------------
 # Login / Signup Page
@@ -302,16 +293,6 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
     elif menu == "Add Sale":
         st.header("🧾 Add Sale")
         customers = fetch_customers()
-        with st.form("add_sale"):
-            customer_id = st.selectbox("Select Customer", customers['customer_id'])
-            product = st.text_input("Product")
-            amount = st.number_input("Amount", min_value=0.0)
-            sale_date = st.date_input("Sale Date")
-            submit = st.form_submit_button("Add")
-            if submit:
-                insert_sale((customer_id, product, amount, sale_date))
-                st.success("✅ Sale recorded")
-
         if customers.empty:
             st.warning("Please add customers first.")
         else:
@@ -327,12 +308,7 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
 
                 submit_sale = st.form_submit_button("Add Sale")
                 if submit_sale:
-                    insert_sale({
-                        "Customer ID": selected_customer,
-                        "Product": product,
-                        "Amount": amount,
-                        "Sale Date": sale_date.strftime("%Y-%m-%d")
-                    })
+                    insert_sale((selected_customer, product, amount, sale_date))  # ✅ call the existing function
                     st.success(f"✅ Sale of ₹{amount:.2f} added for {selected_customer}")
 
     elif menu == "Edit Sale":
