@@ -22,8 +22,9 @@ def get_connection():
         database='sql12789825'
     )
 
-conn = get_connection()
-c = conn.cursor(buffered=True)
+if not conn.is_connected():
+    conn.reconnect(attempts=3, delay=2)
+return conn
 
 # ✅ Safely ensure 'users' table has 'password' column
 try:
@@ -85,10 +86,16 @@ def authenticate_user(email, password):
     return c.fetchone()
 
 def fetch_customers():
-    return pd.read_sql("SELECT * FROM customers", conn)
+    c = conn.cursor(dictionary=True)
+    c.execute("SELECT * FROM customers")
+    rows = c.fetchall()
+    return pd.DataFrame(rows)
 
 def fetch_sales():
-        return pd.read_sql("SELECT * FROM sales", conn)
+    c = conn.cursor(dictionary=True)
+    c.execute("SELECT * FROM sales")
+    rows = c.fetchall()
+    return pd.DataFrame(rows)
 
 def insert_customer(row):
         sql = """INSERT INTO customers (customer_id, name, email, phone, address, city, state, gender, company, joined_date)
