@@ -22,9 +22,9 @@ def get_connection():
         database='sql12789825'
     )
 
-if not conn.is_connected():
-    conn.reconnect(attempts=3, delay=2)
-return conn
+    if not conn.is_connected():
+        conn.reconnect(attempts=3, delay=2)
+    return conn
 
 # ✅ Safely ensure 'users' table has 'password' column
 try:
