@@ -248,7 +248,12 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
         st.header("📋 All Customers")
         data = fetch_customers()
         st.dataframe(data)
-        selected_profile = st.selectbox("🔍 View Customer Profile", data['customer_id'])
+        if 'customer_id' in data.columns and not data.empty:
+            selected_profile = st.selectbox("🔍 View Customer Profile", data['customer_id'])
+            if st.button("View Profile"):
+                show_customer_profile(selected_profile)
+        else:
+            st.warning("⚠️ No customers found or 'customer_id' column missing.")
         if st.button("View Profile"):
             show_customer_profile(selected_profile)
 
