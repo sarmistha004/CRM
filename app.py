@@ -130,6 +130,33 @@ def delete_sale(sid):
         c.execute("DELETE FROM sales WHERE id=%s", (sid,))
         conn.commit()
 
+def show_customer_profile(customer_id):
+    customer_df = fetch_customers()
+    sales_df = fetch_sales()
+    customer = customer_df[customer_df['customer_id'] == customer_id]
+    if customer.empty:
+        st.warning("Customer not found.")
+        return
+
+    customer = customer.iloc[0]
+    st.subheader(f"🧑‍💼 Profile: {customer['name']}")
+    st.markdown(f"**Email:** {customer['email']}")
+    st.markdown(f"**Phone:** {customer['phone']}")
+    st.markdown(f"**Address:** {customer['address']}, {customer['city']}, {customer['state']}")
+    st.markdown(f"**Gender:** {customer['gender']}")
+    st.markdown(f"**Company:** {customer['company']}")
+    st.markdown(f"**Joined:** {customer['joined_date']}")
+
+    sales = sales_df[sales_df['customer_id'] == customer_id]
+    total_purchases = sales['amount'].sum()
+    last_purchase_date = sales['sale_date'].max() if not sales.empty else "N/A"
+    st.markdown(f"**Total Purchases:** ₹{total_purchases:.2f}")
+    st.markdown(f"**Last Purchase Date:** {last_purchase_date}")
+
+    if not sales.empty:
+        fig = px.bar(sales, x='sale_date', y='amount', title='🪙 Purchase History')
+        st.plotly_chart(fig)
+
 # ---------------------------
 # UI Setup
 # ---------------------------
@@ -221,6 +248,9 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
         st.header("📋 All Customers")
         data = fetch_customers()
         st.dataframe(data)
+        selected_profile = st.selectbox("🔍 View Customer Profile", data['customer_id'])
+        if st.button("View Profile"):
+            show_customer_profile(selected_profile)
 
         if not data.empty:
             st.subheader("📊 Gender-wise Distribution")
