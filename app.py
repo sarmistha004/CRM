@@ -23,7 +23,7 @@ def get_connection():
     )
 
 conn = get_connection()
-c = conn.cursor()
+c = conn.cursor(buffered=True)
 
 # ✅ Safely ensure 'users' table has 'password' column
 try:
