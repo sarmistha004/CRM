@@ -134,6 +134,10 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
+if st.session_state.get("logged_in", False) and st.session_state.get("page") == "auth":
+    st.session_state.page = "dashboard"
+    st.rerun()
+
 # ---------------------------
 # Session State
 # ---------------------------
