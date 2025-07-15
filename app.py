@@ -14,17 +14,20 @@ from reportlab.pdfgen import canvas
 # ---------------------------
 @st.cache_resource
 def get_connection():
-    return mysql.connector.connect(
+    conn = mysql.connector.connect(
         host='sql12.freesqldatabase.com',
         port=3306,
         user='sql12789825',
         password='QFHEeX2hwG',
         database='sql12789825'
     )
-
     if not conn.is_connected():
         conn.reconnect(attempts=3, delay=2)
     return conn
+
+# ✅ Now call it
+conn = get_connection()
+c = conn.cursor(buffered=True)
 
 # ✅ Safely ensure 'users' table has 'password' column
 try:
