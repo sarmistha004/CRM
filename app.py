@@ -3,6 +3,7 @@ import pandas as pd
 import os
 import mysql.connector
 from datetime import datetime
+import time
 import plotly.express as px
 from io import BytesIO
 from reportlab.lib.pagesizes import letter
@@ -171,11 +172,12 @@ if st.session_state.page == "auth":
                 with st.spinner("🔄 Logging you in, please wait..."):
                     user = authenticate_user(email, password)
                     if user:
+                        st.success("✅ Login successful! Redirecting...")
+                        time.sleep(1)
                         st.session_state.logged_in = True
                         st.session_state.name = user[1]
                         st.session_state.email = user[2]
                         st.session_state.is_admin = user[2] in AUTHENTICATED_EMAILS
-                        st.success("✅ Login successful! Redirecting...")
                         st.session_state.page = "dashboard"
                         st.rerun()
                     else:
