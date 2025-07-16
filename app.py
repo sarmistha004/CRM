@@ -53,6 +53,13 @@ c.execute('''CREATE TABLE IF NOT EXISTS customers (
     joined_date DATE
 )''')
 
+# ✅ Add follow_up_date column if not already present
+try:
+    c.execute("ALTER TABLE customers ADD COLUMN follow_up_date DATE")
+    conn.commit()
+except mysql.connector.errors.ProgrammingError:
+    pass  # Column already exists
+
 # ---------------------------
 # User Authentication Setup
 # ---------------------------
@@ -107,16 +114,16 @@ def fetch_sales():
     return df
 
 def insert_customer(row):
-        sql = """INSERT INTO customers (customer_id, name, email, phone, address, city, state, gender, company, joined_date)
+        sql = """INSERT INTO customers (customer_id, name, email, phone, address, city, state, gender, company, joined_date, follow_up_date)
                  VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
         c.execute(sql, row)
         conn.commit()
 
 def update_customer(row):
-        sql = """UPDATE customers SET customer_id=%s, name=%s, email=%s, phone=%s, address=%s, city=%s, 
-                 state=%s, gender=%s, company=%s, joined_date=%s WHERE id=%s"""
-        c.execute(sql, row)
-        conn.commit()
+    sql = """UPDATE customers SET customer_id=%s, name=%s, email=%s, phone=%s, address=%s, city=%s, 
+             state=%s, gender=%s, company=%s, joined_date=%s, follow_up_date=%s WHERE id=%s"""
+    c.execute(sql, row)
+    conn.commit()
 
 def delete_customer(cid):
         c.execute("DELETE FROM customers WHERE id=%s", (cid,))
@@ -273,7 +280,7 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
 
     menu_options = ["Show Customers","Sales Report","View Customer Profile"]
     if st.session_state.is_admin:
-        menu_options += ["Add Customer", "Edit Customer", "Delete Customer", "Add Sale", "Edit Sale", "Delete Sale"]
+        menu_options += ["Add Customer", "Edit Customer", "Delete Customer", "Add Sale", "Edit Sale", "Delete Sale", "Follow-Up Reminders"]
 
     menu = st.selectbox("📂 Choose Action", menu_options)
     data = fetch_customers()
@@ -330,9 +337,10 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
             gender = st.selectbox("Gender", ["Male", "Female", "Other"])
             company = st.text_input("Company")
             joined = st.date_input("Joined Date")
+            follow_up_date = st.date_input("Follow-Up Date (Optional)", value=None)
             submit = st.form_submit_button("Add")
             if submit:
-                insert_customer((cid, name, email, phone, address, city, state, gender, company, joined))
+                insert_customer((cid, name, email, phone, address, city, state, gender, company, joined, follow_up_date))
                 st.success("✅ Customer added")
 
     elif menu == "Edit Customer":
@@ -350,6 +358,7 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
             gender = st.selectbox("Gender", ["Male", "Female", "Other"], index=["Male", "Female", "Other"].index(row['gender']))
             company = st.text_input("Company", value=row['company'])
             joined = st.date_input("Joined Date", value=row['joined_date'])
+            follow_up_date = st.date_input("Follow-Up Date", value=row.get('follow_up_date'))
             submit = st.form_submit_button("Update")
             if submit:
                 update_customer((cid, name, email, phone, address, city, state, gender, company, joined, selected))
@@ -464,6 +473,25 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
 
             pdf = generate_sales_pdf(sales)
             st.download_button("📄 Download PDF", data=pdf, file_name="sales_report.pdf", mime="application/pdf")
+
+    elif menu == "Follow-Up Reminders":
+        st.header("📅 Upcoming Follow-Up Reminders")
+        df = fetch_customers()
+
+        if 'follow_up_date' not in df.columns:
+            st.warning("⚠️ 'follow_up_date' column not found.")
+        else:
+            df['follow_up_date'] = pd.to_datetime(df['follow_up_date'], errors='coerce')
+            df = df[df['follow_up_date'].notna()]  # ✅ Ignore empty/missing dates
+
+            upcoming = df[df['follow_up_date'].between(datetime.today(), datetime.today() + pd.Timedelta(days=7))]
+            upcoming = upcoming.sort_values("follow_up_date")  # ✅ Sort reminders by date
+
+            if upcoming.empty:
+                    st.info("✅ No follow-ups due in the next 7 days.")
+            else:
+                st.success(f"🔔 {len(upcoming)} follow-up(s) due in next 7 days:")
+                st.dataframe(upcoming[["customer_id", "name", "email", "phone", "follow_up_date"]])
 
 
 # ---------------------------
