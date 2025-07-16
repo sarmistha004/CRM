@@ -394,11 +394,72 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
                 product = st.text_input("Product")
                 amount = st.number_input("Amount (₹)", min_value=0.0, format="%.2f")
                 sale_date = st.date_input("Sale Date", datetime.today())
-
                 submit_sale = st.form_submit_button("Add Sale")
+
                 if submit_sale:
-                    insert_sale((selected_customer, product, amount, sale_date))  # ✅ call the existing function
+                    # Insert into sales table
+                    insert_sale((selected_customer, product, amount, sale_date))
                     st.success(f"✅ Sale of ₹{amount:.2f} added for {selected_customer}")
+
+                    # Fetch customer details
+                    customer = customers[customers["customer_id"] == selected_customer].iloc[0]
+
+                    # 📄 Generate Invoice PDF
+                    buffer = BytesIO()
+                    pdf = canvas.Canvas(buffer, pagesize=letter)
+                    pdf.drawImage("logo.png", 400, height - 70, width=120, preserveAspectRatio=True, mask='auto')
+                    width, height = letter
+
+                    invoice_id = f"INV-{int(time.time())}"  # Unique invoice ID
+                    gstin = "29ABCDE1234F2Z5"               # Replace with your actual GST
+
+                    pdf.setFont("Helvetica", 12)
+                    pdf.drawString(50, height - 100, f"Invoice ID: {invoice_id}")
+                    pdf.drawString(300, height - 100, f"GSTIN: {gstin}")
+
+                    
+                    # 🔷 Header
+                    pdf.setFont("Helvetica-Bold", 20)
+                    pdf.setFillColorRGB(0.2, 0.2, 0.8)
+                    pdf.drawString(200, height - 50, "Relatrix Invoice")
+
+                    # 📍 Company Info
+                    pdf.setFont("Helvetica", 12)
+                    pdf.setFillColorRGB(0, 0, 0)
+                    pdf.drawString(50, height - 90, "From:")
+                    pdf.drawString(50, height - 105, "Relatrix CRM Pvt. Ltd.")
+                    pdf.drawString(50, height - 120, "Email: support@relatrix.com")
+
+                    # 📌 Customer Info
+                    pdf.drawString(350, height - 90, "To:")
+                    pdf.drawString(50, height - 130, f"Name: {customer['name']}")
+                    pdf.drawString(50, height - 145, f"Email: {customer['email']}")
+                    pdf.drawString(50, height - 160, f"Phone: {customer['phone']}")
+                    pdf.drawString(50, height - 175, f"Product: {product}")
+                    pdf.drawString(50, height - 190, f"Amount: ₹{amount}")
+                    pdf.drawString(50, height - 205, f"Date: {sale_date}")
+
+                    # 📅 Sale Info
+                    pdf.setFont("Helvetica-Bold", 14)
+                    pdf.drawString(50, height - 160, "Invoice Details:")
+                    pdf.setFont("Helvetica", 12)
+                    pdf.drawString(50, height - 180, f"Customer ID: {selected_customer}")
+                    pdf.drawString(50, height - 195, f"Product: {product}")
+                    pdf.drawString(50, height - 210, f"Amount: ₹{amount:.2f}")
+                    pdf.drawString(50, height - 225, f"Date: {sale_date}")
+
+                    # 📌 Footer
+                    pdf.setFont("Helvetica-Oblique", 10)
+                    pdf.drawString(50, 40, "Thank you for your business!")
+                    pdf.save()
+
+                    buffer.seek(0)
+                    st.download_button(
+                        "📄 Download Invoice PDF",
+                        data=buffer,
+                        file_name=f"invoice_{selected_customer}_{sale_date}.pdf",
+                        mime="application/pdf"
+                    )
 
     elif menu == "Edit Sale":
         df = fetch_sales()
