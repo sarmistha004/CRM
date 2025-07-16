@@ -429,14 +429,14 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
             st.plotly_chart(product_chart)
 
             # 📅 Sales by Date
-           sales['sale_date'] = pd.to_datetime(sales['sale_date']).dt.date  # 👈 This cleans the date
-           daily_sales = sales.groupby("sale_date")["amount"].sum().reset_index()
+            sales['sale_date'] = pd.to_datetime(sales['sale_date']).dt.date  # 👈 This cleans the date
+            daily_sales = sales.groupby("sale_date")["amount"].sum().reset_index()
 
-           date_chart = px.line(
-              daily_sales, x="sale_date", y="amount",
-              title="📆 Daily Sales Trend", markers=True
-           )
-           st.plotly_chart(date_chart)
+            date_chart = px.line(
+                daily_sales, x="sale_date", y="amount",
+                title="📆 Daily Sales Trend", markers=True
+            )
+            st.plotly_chart(date_chart)
 
             # 🔻 Download CSV
             csv = sales.to_csv(index=False).encode("utf-8")
