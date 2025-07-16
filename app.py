@@ -135,6 +135,12 @@ def delete_sale(sid):
 def show_customer_profile(customer_id):
     customer_df = fetch_customers()
     sales_df = fetch_sales()
+    
+    # Debugging outputs
+    st.write("🧪 sales_df Preview:", sales_df.head())
+    st.write("🔎 Searching for customer_id:", customer_id)
+    st.write("🧩 Columns in sales_df:", sales_df.columns.tolist())
+
     customer = customer_df[customer_df['customer_id'] == customer_id]
     if customer.empty:
         st.warning("Customer not found.")
@@ -148,7 +154,7 @@ def show_customer_profile(customer_id):
     st.markdown(f"**Gender:** {customer['gender']}")
     st.markdown(f"**Company:** {customer['company']}")
     st.markdown(f"**Joined:** {customer['joined_date']}")
-    st.write("Columns in sales_df:", sales_df.columns.tolist())
+
     sales = sales_df[sales_df['customer_id'] == customer_id]
     total_purchases = sales['amount'].sum()
     last_purchase_date = sales['sale_date'].max() if not sales.empty else "N/A"
@@ -158,7 +164,7 @@ def show_customer_profile(customer_id):
     if not sales.empty:
         fig = px.bar(sales, x='sale_date', y='amount', title='🪙 Purchase History')
         st.plotly_chart(fig)
-
+        
 # ---------------------------
 # UI Setup
 # ---------------------------
