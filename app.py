@@ -8,6 +8,8 @@ import plotly.express as px
 from io import BytesIO
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from PIL import Image
+import os
 
 # ---------------------------
 # Database Setup
@@ -200,6 +202,7 @@ def show_customer_profile(customer_id):
 # UI Setup
 # ---------------------------
 st.set_page_config(page_title="📊 Relatrix - Corporate CRM Dashboard", layout="centered")
+st.markdown("<h1 style='text-align: center;'>🔐 Welcome to Relatrix CRM</h1>", unsafe_allow_html=True)
 
 # 🌈 Background and Hide Header/Footer
 st.markdown("""
@@ -231,6 +234,13 @@ st.markdown("""
 # Login / Signup Page
 # ---------------------------
 if st.session_state.page == "auth":
+    # 🔷 Show Logo at the top of login/signup screen
+    if os.path.exists("logo.png"):
+        logo = Image.open("logo.png")
+        st.image(logo, width=200)
+    else:
+        st.warning("⚠️ Logo not found. Please make sure 'logo.png' is in the same directory.")
+    
     st.subheader("🔐 Login or Sign Up")
     auth_action = st.radio("Choose Action", ["Login", "Sign Up"])
 
