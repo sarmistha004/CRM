@@ -98,8 +98,11 @@ def fetch_sales():
     c = conn.cursor(dictionary=True)
     c.execute("SELECT * FROM sales")
     rows = c.fetchall()
-    df = pd.DataFrame(rows)
-    st.write("🔍 Fetched Sales Data Columns:", df.columns.tolist())
+    if not rows:
+        # Ensures columns exist even if no data
+        df = pd.DataFrame(columns=['id', 'customer_id', 'product', 'amount', 'sale_date'])
+    else:
+        df = pd.DataFrame(rows)
     df.rename(columns=lambda col: col.strip().lower(), inplace=True)
     return df
 
@@ -142,6 +145,15 @@ def show_customer_profile(customer_id):
     st.write("🔎 Searching for customer_id:", customer_id)
     st.write("🧩 Columns in sales_df:", sales_df.columns.tolist())
 
+    # Strip and lowercase column names safely
+    sales_df.columns = sales_df.columns.str.strip().str.lower()
+
+    # Defensive check
+    if 'customer_id' not in sales_df.columns:
+        st.error("❌ 'customer_id' column missing in sales data.")
+        return
+
+    # Get customer info
     customer = customer_df[customer_df['customer_id'] == customer_id]
     if customer.empty:
         st.warning("Customer not found.")
@@ -155,14 +167,15 @@ def show_customer_profile(customer_id):
     st.markdown(f"**Gender:** {customer['gender']}")
     st.markdown(f"**Company:** {customer['company']}")
     st.markdown(f"**Joined:** {customer['joined_date']}")
-    
-    sales_df.columns = sales_df.columns.str.strip().str.lower()
+
+    # Filter sales for the customer
     sales = sales_df[sales_df['customer_id'] == customer_id]
     total_purchases = sales['amount'].sum()
     last_purchase_date = sales['sale_date'].max() if not sales.empty else "N/A"
     st.markdown(f"**Total Purchases:** ₹{total_purchases:.2f}")
     st.markdown(f"**Last Purchase Date:** {last_purchase_date}")
 
+    # Chart
     if not sales.empty:
         fig = px.bar(sales, x='sale_date', y='amount', title='🪙 Purchase History')
         st.plotly_chart(fig)
