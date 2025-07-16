@@ -260,7 +260,7 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
             st.stop()
 
 
-    menu_options = ["Show Customers","Sales Report"]
+    menu_options = ["Show Customers","Sales Report","View Customer Profile"]
     if st.session_state.is_admin:
         menu_options += ["Add Customer", "Edit Customer", "Delete Customer", "Add Sale", "Edit Sale", "Delete Sale"]
 
@@ -271,12 +271,6 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
         st.header("📋 All Customers")
         data = fetch_customers()
         st.dataframe(data)
-        if 'customer_id' in data.columns and not data.empty:
-            selected_profile = st.selectbox("🔍 View Customer Profile", data['customer_id'])
-            if st.button("View Profile", key="view_profile_btn"):
-                show_customer_profile(selected_profile)
-        else:
-            st.warning("⚠️ No customers found or 'customer_id' column missing.")
 
         if not data.empty:
             st.subheader("📊 Gender-wise Distribution")
@@ -356,6 +350,14 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
         if st.button("Delete"):
             delete_customer(selected)
             st.success("🗑️ Deleted successfully")
+
+    elif menu == "View Customer Profile":
+        if 'customer_id' in data.columns and not data.empty:
+            selected_profile = st.selectbox("🔍 View Customer Profile", data['customer_id'])
+            if st.button("View Profile", key="view_profile_btn"):
+                show_customer_profile(selected_profile)
+        else:
+            st.warning("⚠️ No customers found or 'customer_id' column missing.")
 
     elif menu == "Add Sale":
         st.header("🧾 Add Sale")
