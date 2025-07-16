@@ -380,86 +380,75 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
             st.warning("⚠️ No customers found or 'customer_id' column missing.")
 
     elif menu == "Add Sale":
-        st.header("🧾 Add Sale")
         customers = fetch_customers()
         if customers.empty:
             st.warning("Please add customers first.")
         else:
-            with st.form("sale_form"):
-                selected_customer = st.selectbox(
-                    "Select Customer",
-                    customers["customer_id"],
-                    format_func=lambda cid: f"{cid} - {customers.loc[customers['customer_id'] == cid, 'name'].values[0]}"
-                )
-                product = st.text_input("Product")
-                amount = st.number_input("Amount (₹)", min_value=0.0, format="%.2f")
-                sale_date = st.date_input("Sale Date", datetime.today())
-                submit_sale = st.form_submit_button("Add Sale")
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                st.markdown("""
+                    <div style='padding: 25px; border: 2px solid #6C63FF; border-radius: 12px;
+                                background-color: #f9f9ff; box-shadow: 0 0 10px #d3d3ff;'>
+                        <h2 style='color:#6C63FF;'>🧾 Add Sale</h2>
+                    </div>
+                """, unsafe_allow_html=True)
 
-                if submit_sale:
-                    # Insert into sales table
-                    insert_sale((selected_customer, product, amount, sale_date))
-                    st.success(f"✅ Sale of ₹{amount:.2f} added for {selected_customer}")
-
-                    # Fetch customer details
-                    customer = customers[customers["customer_id"] == selected_customer].iloc[0]
-
-                    # 📄 Generate Invoice PDF
-                    buffer = BytesIO()
-                    pdf = canvas.Canvas(buffer, pagesize=letter)
-                    pdf.drawImage("logo.png", 400, height - 70, width=120, preserveAspectRatio=True, mask='auto')
-                    width, height = letter
-
-                    invoice_id = f"INV-{int(time.time())}"  # Unique invoice ID
-                    gstin = "29ABCDE1234F2Z5"               # Replace with your actual GST
-
-                    pdf.setFont("Helvetica", 12)
-                    pdf.drawString(50, height - 100, f"Invoice ID: {invoice_id}")
-                    pdf.drawString(300, height - 100, f"GSTIN: {gstin}")
-
-                    
-                    # 🔷 Header
-                    pdf.setFont("Helvetica-Bold", 20)
-                    pdf.setFillColorRGB(0.2, 0.2, 0.8)
-                    pdf.drawString(200, height - 50, "Relatrix Invoice")
-
-                    # 📍 Company Info
-                    pdf.setFont("Helvetica", 12)
-                    pdf.setFillColorRGB(0, 0, 0)
-                    pdf.drawString(50, height - 90, "From:")
-                    pdf.drawString(50, height - 105, "Relatrix CRM Pvt. Ltd.")
-                    pdf.drawString(50, height - 120, "Email: support@relatrix.com")
-
-                    # 📌 Customer Info
-                    pdf.drawString(350, height - 90, "To:")
-                    pdf.drawString(50, height - 130, f"Name: {customer['name']}")
-                    pdf.drawString(50, height - 145, f"Email: {customer['email']}")
-                    pdf.drawString(50, height - 160, f"Phone: {customer['phone']}")
-                    pdf.drawString(50, height - 175, f"Product: {product}")
-                    pdf.drawString(50, height - 190, f"Amount: ₹{amount}")
-                    pdf.drawString(50, height - 205, f"Date: {sale_date}")
-
-                    # 📅 Sale Info
-                    pdf.setFont("Helvetica-Bold", 14)
-                    pdf.drawString(50, height - 160, "Invoice Details:")
-                    pdf.setFont("Helvetica", 12)
-                    pdf.drawString(50, height - 180, f"Customer ID: {selected_customer}")
-                    pdf.drawString(50, height - 195, f"Product: {product}")
-                    pdf.drawString(50, height - 210, f"Amount: ₹{amount:.2f}")
-                    pdf.drawString(50, height - 225, f"Date: {sale_date}")
-
-                    # 📌 Footer
-                    pdf.setFont("Helvetica-Oblique", 10)
-                    pdf.drawString(50, 40, "Thank you for your business!")
-                    pdf.save()
-
-                    buffer.seek(0)
-                    st.download_button(
-                        "📄 Download Invoice PDF",
-                        data=buffer,
-                        file_name=f"invoice_{selected_customer}_{sale_date}.pdf",
-                        mime="application/pdf"
+                with st.form("sale_form"):
+                    st.markdown("### 🎯 Sale Entry Form")
+                    selected_customer = st.selectbox(
+                        "👥 Select Customer",
+                        customers["customer_id"],
+                        format_func=lambda cid: f"{cid} - {customers.loc[customers['customer_id'] == cid, 'name'].values[0]}"
                     )
+                    product = st.text_input("📦 Product")
+                    amount = st.number_input("💰 Amount (₹)", min_value=0.0, format="%.2f")
+                    sale_date = st.date_input("📅 Sale Date", datetime.today())
+                    submit_sale = st.form_submit_button("✅ Add Sale")
+
+                    if submit_sale:
+                        insert_sale((selected_customer, product, amount, sale_date))
+                        st.success(f"✅ Sale of ₹{amount:.2f} added for {selected_customer}")
+                    
+                        customer = customers[customers["customer_id"] == selected_customer].iloc[0]
+
+                        # Generate PDF
+                        buffer = BytesIO()
+                        pdf = canvas.Canvas(buffer, pagesize=letter)
+                        width, height = letter
+
+                        pdf.setFont("Helvetica-Bold", 20)
+                        pdf.setFillColorRGB(0.2, 0.2, 0.8)
+                        pdf.drawString(200, height - 50, "Relatrix Invoice")
+
+                        pdf.setFont("Helvetica", 12)
+                        pdf.setFillColorRGB(0, 0, 0)
+                        invoice_id = f"INV-{int(time.time())}"
+                        gstin = "29ABCDE1234F2Z5"
+                        pdf.drawString(50, height - 100, f"Invoice ID: {invoice_id}")
+                        pdf.drawString(300, height - 100, f"GSTIN: {gstin}")
+
+                        pdf.drawString(50, height - 120, "From: Relatrix CRM Pvt. Ltd.")
+                        pdf.drawString(50, height - 135, "Email: support@relatrix.com")
+                        pdf.drawString(50, height - 160, f"To: {customer['name']}")
+                        pdf.drawString(50, height - 175, f"Email: {customer['email']}")
+                        pdf.drawString(50, height - 190, f"Phone: {customer['phone']}")
+
+                        pdf.drawString(50, height - 220, f"Customer ID: {selected_customer}")
+                        pdf.drawString(50, height - 235, f"Product: {product}")
+                        pdf.drawString(50, height - 250, f"Amount: ₹{amount:.2f}")
+                        pdf.drawString(50, height - 265, f"Date: {sale_date}")
+
+                        pdf.setFont("Helvetica-Oblique", 10)
+                        pdf.drawString(50, 40, "Thank you for your business!")
+                        pdf.save()
+                        buffer.seek(0)
+
+                        st.download_button(
+                            "📄 Download Invoice PDF",
+                            data=buffer,
+                            file_name=f"invoice_{selected_customer}_{sale_date}.pdf",
+                            mime="application/pdf"
+                        )
 
     elif menu == "Edit Sale":
         df = fetch_sales()
