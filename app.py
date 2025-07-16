@@ -185,6 +185,17 @@ def show_customer_profile(customer_id):
 # ---------------------------
 st.set_page_config(page_title="📊 Relatrix - Corporate CRM Dashboard", layout="centered")
 
+# 🌈 Background and Hide Header/Footer
+st.markdown("""
+    <style>
+        body { 
+            background: linear-gradient(to right, #ffe6f0, #e6ccff); 
+        }
+        header, footer {
+            visibility: hidden;
+        }
+    </style>
+""", unsafe_allow_html=True)
 st.session_state.setdefault("logged_in", False)
 st.session_state.setdefault("email", "")
 st.session_state.setdefault("name", "")
