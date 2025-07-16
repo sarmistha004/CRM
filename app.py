@@ -361,7 +361,7 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
             follow_up_date = st.date_input("Follow-Up Date", value=row.get('follow_up_date'))
             submit = st.form_submit_button("Update")
             if submit:
-                update_customer((cid, name, email, phone, address, city, state, gender, company, joined, selected))
+                update_customer((cid, name, email, phone, address, city, state, gender, company, joined, follow_up_date, selected))
                 st.success("✅ Customer updated")
 
     elif menu == "Delete Customer":
