@@ -3,3 +3,4 @@ streamlit>=1.25.0
 pandas>=1.5.0
 plotly
 reportlab
+Pillow
