@@ -99,7 +99,8 @@ def fetch_sales():
     c.execute("SELECT * FROM sales")
     rows = c.fetchall()
     df = pd.DataFrame(rows)
-    st.write("🔍 Fetched Sales Data Columns:", df.columns.tolist())  # ✅ Add this line
+    st.write("🔍 Fetched Sales Data Columns:", df.columns.tolist())
+    df.rename(columns=lambda col: col.strip().lower(), inplace=True)
     return df
 
 def insert_customer(row):
@@ -154,7 +155,8 @@ def show_customer_profile(customer_id):
     st.markdown(f"**Gender:** {customer['gender']}")
     st.markdown(f"**Company:** {customer['company']}")
     st.markdown(f"**Joined:** {customer['joined_date']}")
-
+    
+    sales_df.columns = sales_df.columns.str.strip().str.lower()
     sales = sales_df[sales_df['customer_id'] == customer_id]
     total_purchases = sales['amount'].sum()
     last_purchase_date = sales['sale_date'].max() if not sales.empty else "N/A"
