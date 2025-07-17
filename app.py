@@ -288,6 +288,7 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
         </div>
         """,
         unsafe_allow_html=True
+    )
     st.markdown("<p style='text-align: center; font-size: 24px; color: deeppink; font-family: \"Comic Sans MS\", cursive; font-weight: bold;'>📈 Where Relationships Drive Results.</p>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; font-size: 22px; font-family: \"Comic Sans MS\", cursive; font-weight: bold;'>🏢 A Corporate CRM Dashboard</p>",unsafe_allow_html=True)
             
