@@ -202,10 +202,18 @@ def show_customer_profile(customer_id):
 # UI Setup
 # ---------------------------
 st.set_page_config(page_title="📊 Relatrix - Corporate CRM Dashboard", layout="centered")
-st.markdown("<h1 style='text-align: center;'>🔐 Welcome to Relatrix </h1>", unsafe_allow_html=True)
-col1, col2, col3 = st.columns([1, 2, 1])
-with col2:
-    st.image("logo.png", width=220)
+
+# ---------------------------
+# Page Config & Logo (Only on login page)
+# ---------------------------
+if "logged_in" not in st.session_state or not st.session_state.logged_in:
+    
+    # Show welcome message + logo only on login/signup screen
+    st.markdown("<h1 style='text-align: center;'>🔐 Welcome to Relatrix </h1>", unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.image("logo.png", width=250)
 
 # 🌈 Background and Hide Header/Footer
 st.markdown("""
@@ -272,6 +280,8 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
     st.markdown("""
         <div style='text-align: center;'>
             <h1 style='font-size: 44px; color:#6C63FF; font-family:monospace;'>📊 Relatrix</h1>
+            <style='text-align: center; margin-top: 50px;'>
+            <img src='logo.png' width='200'>
             <p style='font-size: 24px; color: deeppink; font-family: "Comic Sans MS", cursive; font-weight: bold;'>📈 Where Relationships Drive Results.</p>
             <p style='font-size: 22px; font-family: "Comic Sans MS", cursive; font-weight: bold;'>🏢 A Corporate CRM Dashboard</p>
         </div>
