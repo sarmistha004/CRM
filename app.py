@@ -202,10 +202,9 @@ def show_customer_profile(customer_id):
 # UI Setup
 # ---------------------------
 st.set_page_config(page_title="📊 Relatrix - Corporate CRM Dashboard", layout="centered")
-st.markdown("<h1 style='text-align: center;'>🔐 Welcome to Relatrix CRM</h1>", unsafe_allow_html=True)
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    st.image("logo.png", width=150)
+    st.image("logo.png", width=180)
 
 # 🌈 Background and Hide Header/Footer
 st.markdown("""
@@ -228,6 +227,7 @@ st.session_state.setdefault("page", "auth")
 # ---------------------------
 # Login / Signup Page
 # ---------------------------
+st.markdown("<h1 style='text-align: center;'>🔐 Welcome to Relatrix CRM</h1>", unsafe_allow_html=True)
 if st.session_state.page == "auth":
     # 🔷 Show Logo at the top of login/signup screen
     if os.path.exists("logo.png"):
