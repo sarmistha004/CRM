@@ -277,7 +277,7 @@ if st.session_state.page == "auth":
 # Dashboard Page (Post-login)
 # ---------------------------
 if st.session_state.page == "dashboard" and st.session_state.logged_in:
-    st.markdown("<h1 style='text-align: center; font-size: 44px; color:#6C63FF; font-family:monospace;'>📊 Relatrix</h1">, unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; font-size: 44px; color:#6C63FF; font-family:monospace;'>📊 Relatrix</h1>", unsafe_allow_html=True)
     logo = Image.open("logo.png")
     st.image(logo, width=250)
     st.markdown("<p style='text-align: center; font-size: 24px; color: deeppink; font-family: 'Comic Sans MS', cursive; font-weight: bold;'>📈 Where Relationships Drive Results.</p>", unsafe_allow_html=True)
