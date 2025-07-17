@@ -10,6 +10,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from PIL import Image
 import os
+import base64
 
 # ---------------------------
 # Database Setup
