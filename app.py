@@ -280,8 +280,7 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
     st.markdown("""
         <div style='text-align: center;'>
             <h1 style='font-size: 44px; color:#6C63FF; font-family:monospace;'>📊 Relatrix</h1>
-            <style='text-align: center; margin-top: 50px;'>
-            <img src='logo.png' width='200'>
+            <img src='logo.png' width='250' style='margin-top: 50px;'/>
             <p style='font-size: 24px; color: deeppink; font-family: "Comic Sans MS", cursive; font-weight: bold;'>📈 Where Relationships Drive Results.</p>
             <p style='font-size: 22px; font-family: "Comic Sans MS", cursive; font-weight: bold;'>🏢 A Corporate CRM Dashboard</p>
         </div>
