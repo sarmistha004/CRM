@@ -334,12 +334,24 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
             csv = data.to_csv(index=False).encode('utf-8')
             st.download_button("📥 Download CSV", data=csv, file_name="customers.csv", mime="text/csv")
 
+            from reportlab.lib.utils import ImageReader
+
             def generate_pdf(dataframe):
                 buffer = BytesIO()
                 c = canvas.Canvas(buffer, pagesize=letter)
+
+                # 🖼️ Add Logo
+                logo_path = "logo.png"
+                if os.path.exists(logo_path):
+                    logo = ImageReader(logo_path)
+                    c.drawImage(logo, 230, 730, width=150, preserveAspectRatio=True, mask='auto')  # Center top
+
+                # 📋 Report Title
                 width, height = letter
                 c.setFont("Helvetica-Bold", 16)
-                c.drawString(50, height - 50, "📄 Relatrix - Customer Report")
+                c.drawCentredString(width / 2, height - 50, "📄 Relatrix - Customer Report")
+
+                # 🧾 Customer Data Rows
                 c.setFont("Helvetica", 10)
                 y = height - 80
                 for _, row in dataframe.iterrows():
@@ -349,10 +361,10 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
                     if y < 50:
                         c.showPage()
                         y = height - 50
+
                 c.save()
                 buffer.seek(0)
                 return buffer
-
             pdf_data = generate_pdf(data)
             st.download_button("📄 Download PDF", data=pdf_data, file_name="customers_report.pdf", mime="application/pdf")
 
