@@ -339,21 +339,23 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
             def generate_pdf(dataframe):
                 buffer = BytesIO()
                 c = canvas.Canvas(buffer, pagesize=letter)
+                width, height = letter
 
-                # 🖼️ Add Logo
+                # 🖼️ Add Logo Centered
                 logo_path = "logo.png"
                 if os.path.exists(logo_path):
                     logo = ImageReader(logo_path)
-                    c.drawImage(logo, 230, 730, width=150, preserveAspectRatio=True, mask='auto')  # Center top
+                    logo_width = 150
+                    logo_x = (width - logo_width) / 2
+                    c.drawImage(logo, logo_x, height - 100, width=logo_width, preserveAspectRatio=True, mask='auto')
 
-                # 📋 Report Title
-                width, height = letter
+                # 📄 Centered Title
                 c.setFont("Helvetica-Bold", 16)
-                c.drawCentredString(width / 2, height - 50, "📄 Relatrix - Customer Report")
+                c.drawCentredString(width / 2, height - 120, "📄 Relatrix - Customer Report")
 
                 # 🧾 Customer Data Rows
                 c.setFont("Helvetica", 10)
-                y = height - 80
+                y = height - 150
                 for _, row in dataframe.iterrows():
                     text = f"{row['customer_id']} | {row['name']} | {row['email']} | {row['gender']} | {row['company']}"
                     c.drawString(50, y, text)
@@ -365,9 +367,10 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
                 c.save()
                 buffer.seek(0)
                 return buffer
+
             pdf_data = generate_pdf(data)
             st.download_button("📄 Download PDF", data=pdf_data, file_name="customers_report.pdf", mime="application/pdf")
-
+    
     elif menu == "Add Customer":
         st.header("➕ Add Customer")
         with st.form("add_customer"):
