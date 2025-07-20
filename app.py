@@ -11,7 +11,27 @@ from reportlab.pdfgen import canvas
 from PIL import Image
 import os
 import base64
+import openai
 
+# 2. 🔐 Set your OpenAI API key
+openai.api_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
+
+# 3. 🧠 Define function to convert natural language to SQL
+def get_sql_from_nl(user_question):
+    prompt = f"""
+You are an SQL expert. Convert the following natural language question to a MySQL SQL query.
+The database contains a 'customers' table with columns: customer_id, name, email, gender, join_date, city, company.
+Respond ONLY with the SQL query, without explanation.
+
+Question: {user_question}
+SQL:
+"""
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.2,
+    )
+    return response['choices'][0]['message']['content'].strip()
 
 # ---------------------------
 # Database Setup
@@ -313,7 +333,7 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
 
     menu_options = ["Show Customers","Sales Report","View Customer Profile"]
     if st.session_state.is_admin:
-        menu_options += ["Add Customer", "Edit Customer", "Delete Customer", "Add Sale", "Edit Sale", "Delete Sale", "Follow-Up Reminders"]
+        menu_options += ["Add Customer", "Edit Customer", "Delete Customer", "Add Sale", "Edit Sale", "Delete Sale", "Follow-Up Reminders", "AI Assistant"]
 
     menu = st.selectbox("📂 Choose Action", menu_options)
     data = fetch_customers()
@@ -593,6 +613,27 @@ if st.session_state.page == "dashboard" and st.session_state.logged_in:
             else:
                 st.success(f"🔔 {len(upcoming)} follow-up(s) due in next 7 days:")
                 st.dataframe(upcoming[["customer_id", "name", "email", "phone", "follow_up_date"]])
+
+    elif menu == "AI Assistant":
+        st.subheader("🤖 ChatGPT Assistant")
+
+        user_question = st.text_input("💬 Ask a question in plain English:")
+
+        if st.button("Ask"):
+            try:
+                sql_query = get_sql_from_nl(user_question)
+                st.code(sql_query, language='sql')
+
+                conn = get_connection()
+                cursor = conn.cursor()
+                cursor.execute(sql_query)
+                result = cursor.fetchall()
+                columns = [desc[0] for desc in cursor.description]
+                df = pd.DataFrame(result, columns=columns)
+                st.dataframe(df)
+
+            except Exception as e:
+                st.error(f"❌ Error: {e}")
 
 
 # ---------------------------
