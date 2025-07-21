@@ -32,7 +32,7 @@ SQL:
         messages=[{"role": "user", "content": prompt}],
         temperature=0.2,
     )
-    return response['choices'][0]['message']['content'].strip()
+    return response.choices[0].message.content.strip()
 
 # ---------------------------
 # Database Setup
