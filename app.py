@@ -58,7 +58,13 @@ def get_connection():
         st.stop()
 
 # --- Store in session_state and reconnect if needed ---
-if 'conn' not in st.session_state or not st.session_state.conn.is_connected():
+def is_conn_alive(conn):
+    try:
+        return conn.is_connected()
+    except:
+        return False
+
+if 'conn' not in st.session_state or not is_conn_alive(st.session_state.conn):
     st.session_state.conn = get_connection()
 
 conn = st.session_state.conn
