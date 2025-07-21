@@ -41,7 +41,7 @@ SQL:
 @st.cache_resource
 def get_connection():
     try:
-        conn = mysql.pymysql.connect(
+        conn = pymysql.connect(
             host='sql12.freesqldatabase.com',
             port=3306,
             user='sql12790997',
