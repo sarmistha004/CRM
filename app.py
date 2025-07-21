@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 import time
-import mysql.connector
+import pymysql
 from datetime import datetime
 import plotly.express as px
 from io import BytesIO
@@ -41,12 +41,13 @@ SQL:
 @st.cache_resource
 def get_connection():
     try:
-        conn = mysql.connector.connect(
+        conn = mysql.pymysql.connect(
             host='sql12.freesqldatabase.com',
             port=3306,
             user='sql12790997',
             password='lRgXuvABNH',
-            database='sql12790997'
+            database='sql12790997',
+            cursorclass=pymysql.cursors.DictCursor
         )
         if conn.is_connected():
             return conn
