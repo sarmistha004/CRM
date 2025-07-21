@@ -71,7 +71,7 @@ conn = st.session_state.conn
 
 # --- Safely create the cursor ---
 try:
-    c = conn.cursor(buffered=True)
+    c = conn.cursor()
 except Exception as e:
     st.error(f"❌ Failed to create cursor: {e}")
     st.stop()
