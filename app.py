@@ -26,7 +26,8 @@ Respond ONLY with the SQL query, without explanation.
 Question: {user_question}
 SQL:
 """
-    response = openai.ChatCompletion.create(
+    client = openai.OpenAI(api_key=your_api_key)
+    response = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.2,
