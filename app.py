@@ -148,7 +148,7 @@ def fetch_sales():
 
 def insert_customer(row):
         sql = """INSERT INTO customers (customer_id, name, email, phone, address, city, state, gender, company, joined_date, follow_up_date)
-                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
         c.execute(sql, row)
         conn.commit()
 
