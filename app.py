@@ -37,7 +37,7 @@ SQL:
 # Database Setup
 # ---------------------------
 @st.cache_resource
-def get_connection():
+def create_connection():
     try:
         conn = mysql.connector.connect(
             host='sql12.freesqldatabase.com',
@@ -46,21 +46,40 @@ def get_connection():
             password='lRgXuvABNH',
             database='sql12790997'
         )
-        if conn.is_connected():
+        return conn
+    except Error as e:
+        st.error(f"❌ Initial connection failed: {e}")
+        return None
+
+# ---------- Reconnect if needed ----------
+def get_connection():
+    conn = create_connection()
+    try:
+        if conn is not None and conn.is_connected():
             return conn
         else:
-            st.error("❌ Unable to connect to the database.")
-            st.stop()
+            # Attempt a reconnect manually
+            st.warning("⚠️ Connection dropped. Trying to reconnect...")
+            conn = create_connection()
+            if conn and conn.is_connected():
+                st.success("✅ Reconnected successfully.")
+                return conn
+            else:
+                st.error("❌ Reconnection failed. Please try again later.")
+                st.stop()
     except Exception as e:
-        st.error(f"❌ Connection failed: {e}")
+        st.error(f"❌ Error while checking connection: {e}")
         st.stop()
 
+# ---------- Use connection ----------
 conn = get_connection()
-if not conn or not conn.is_connected():
-    st.error("❌ Lost connection to the database.")
-    st.stop()
 
-c = conn.cursor(buffered=True)
+# ---------- Create buffered cursor ----------
+try:
+    c = conn.cursor(buffered=True)
+except Exception as e:
+    st.error(f"❌ Failed to create cursor: {e}")
+    st.stop()
 
 # ✅ Safely ensure 'users' table has 'password' column
 try:
