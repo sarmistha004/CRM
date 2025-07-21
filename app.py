@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 import time
-import mysql-connector-python
+import mysql.connector
 from datetime import datetime
 import plotly.express as px
 from io import BytesIO
